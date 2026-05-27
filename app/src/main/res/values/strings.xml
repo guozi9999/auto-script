@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AutoScript</string>
+    <string name="accessibility_service_description">AutoScript 需要无障碍服务来执行自动化操作，包括点击、滑动、输入文字等。</string>
+    
+    <!-- 设置界面 -->
+    <string name="settings">设置</string>
+    <string name="appearance">外观</string>
+    <string name="editor">编辑器</string>
+    <string name="automation">自动化</string>
+    <string name="floating_window">悬浮窗</string>
+    <string name="advanced">高级</string>
+    
+    <!-- 主题选项 -->
+    <string-array name="theme_options">
+        <item>跟随系统</item>
+        <item>浅色模式</item>
+        <item>深色模式</item>
+    </string-array>
+    
+    <!-- 日志级别选项 -->
+    <string-array name="log_level_options">
+        <item>详细</item>
+        <item>调试</item>
+        <item>信息</item>
+        <item>警告</item>
+        <item>错误</item>
+    </string-array>
+    
+    <!-- 按钮 -->
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="reset">重置</string>
+    <string name="confirm">确认</string>
+    <string name="run">运行</string>
+    <string name="stop">停止</string>
+    <string name="settings">设置</string>
+    
+    <!-- 提示信息 -->
+    <string name="script_saved">脚本已保存</string>
+    <string name="script_loaded">脚本已加载</string>
+    <string name="script_deleted">脚本已删除</string>
+    <string name="settings_saved">设置已保存</string>
+    <string name="settings_reset">已重置为默认设置</string>
+</resources>

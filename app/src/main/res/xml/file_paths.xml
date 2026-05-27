@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-files-path
+        name="scripts"
+        path="scripts/" />
+    <external-files-path
+        name="exported"
+        path="exported_scripts/" />
+    <cache-path
+        name="cache"
+        path="." />
+</paths>
