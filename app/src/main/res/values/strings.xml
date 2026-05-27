@@ -34,7 +34,6 @@
     <string name="confirm">确认</string>
     <string name="run">运行</string>
     <string name="stop">停止</string>
-    <string name="settings">设置</string>
     
     <!-- 提示信息 -->
     <string name="script_saved">脚本已保存</string>

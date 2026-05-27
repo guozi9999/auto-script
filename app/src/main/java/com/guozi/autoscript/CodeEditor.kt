@@ -147,9 +147,9 @@ class CodeEditor @JvmOverloads constructor(
     }
     
     /**
-     * 获取总行数
+     * 获取脚本总行数
      */
-    fun getLineCount(): Int {
+    fun getScriptLineCount(): Int {
         return text?.toString()?.lines()?.size ?: 0
     }
     

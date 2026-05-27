@@ -1,7 +1,6 @@
 package com.guozi.autoscript
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.AccessibilityService.FindAccessibilityNodeInfosResult
 import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
@@ -19,16 +18,53 @@ class NodeHelper {
          * 根据文本查找节点
          */
         fun findByText(service: AccessibilityService, text: String): List<NodeInfo> {
-            val nodes = service.findAccessibilityNodeInfosByText(text)
-            return nodes?.map { NodeInfo.fromAccessibilityNodeInfo(it) } ?: emptyList()
+            val root = service.rootInActiveWindow ?: return emptyList()
+            val nodes = mutableListOf<NodeInfo>()
+            findByTextRecursive(root, text, nodes)
+            return nodes
+        }
+        
+        private fun findByTextRecursive(
+            node: AccessibilityNodeInfo,
+            text: String,
+            list: MutableList<NodeInfo>
+        ) {
+            if (node.text?.toString()?.contains(text, ignoreCase = true) == true) {
+                list.add(NodeInfo.fromAccessibilityNodeInfo(node))
+            }
+            if (node.contentDescription?.toString()?.contains(text, ignoreCase = true) == true) {
+                list.add(NodeInfo.fromAccessibilityNodeInfo(node))
+            }
+            
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                findByTextRecursive(child, text, list)
+            }
         }
         
         /**
          * 根据 ID 查找节点
          */
         fun findById(service: AccessibilityService, id: String): List<NodeInfo> {
-            val nodes = service.findAccessibilityNodeInfosByViewId(id)
-            return nodes?.map { NodeInfo.fromAccessibilityNodeInfo(it) } ?: emptyList()
+            val root = service.rootInActiveWindow ?: return emptyList()
+            val nodes = mutableListOf<NodeInfo>()
+            findByIdRecursive(root, id, nodes)
+            return nodes
+        }
+        
+        private fun findByIdRecursive(
+            node: AccessibilityNodeInfo,
+            id: String,
+            list: MutableList<NodeInfo>
+        ) {
+            if (node.viewIdResourceName?.contains(id, ignoreCase = true) == true) {
+                list.add(NodeInfo.fromAccessibilityNodeInfo(node))
+            }
+            
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                findByIdRecursive(child, id, list)
+            }
         }
         
         /**
@@ -174,47 +210,48 @@ class NodeHelper {
          * 点击节点
          */
         fun click(service: AccessibilityService): Boolean {
-            val nodes = if (viewId != null) {
-                service.findAccessibilityNodeInfosByViewId(viewId)
-            } else if (text != null) {
-                service.findAccessibilityNodeInfosByText(text)
-            } else {
-                return false
-            }
-            
-            return nodes?.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK) ?: false
+            val root = service.rootInActiveWindow ?: return false
+            val node = findNodeInTree(root) ?: return false
+            return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         }
         
         /**
          * 长按节点
          */
         fun longClick(service: AccessibilityService): Boolean {
-            val nodes = if (viewId != null) {
-                service.findAccessibilityNodeInfosByViewId(viewId)
-            } else if (text != null) {
-                service.findAccessibilityNodeInfosByText(text)
-            } else {
-                return false
-            }
-            
-            return nodes?.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK) ?: false
+            val root = service.rootInActiveWindow ?: return false
+            val node = findNodeInTree(root) ?: return false
+            return node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
         }
         
         /**
          * 输入文字到节点
          */
         fun setText(service: AccessibilityService, text: String): Boolean {
-            val nodes = if (viewId != null) {
-                service.findAccessibilityNodeInfosByViewId(viewId)
-            } else {
-                return false
-            }
-            
-            val node = nodes?.firstOrNull() ?: return false
+            val root = service.rootInActiveWindow ?: return false
+            val node = findNodeInTree(root) ?: return false
             val arguments = android.os.Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
             }
             return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+        }
+        
+        private fun findNodeInTree(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+            // 匹配 ID
+            if (viewId != null && node.viewIdResourceName == viewId) {
+                return node
+            }
+            // 匹配文本
+            if (text != null && node.text?.toString() == text) {
+                return node
+            }
+            
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                val result = findNodeInTree(child)
+                if (result != null) return result
+            }
+            return null
         }
     }
     

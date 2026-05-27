@@ -110,14 +110,14 @@ class SettingsManager(context: Context) {
     /**
      * 导出设置
      */
-    fun exportSettings(): Map<String, Any> {
+    fun exportSettings(): Map<String, Any?> {
         return prefs.all.toMap()
     }
     
     /**
      * 导入设置
      */
-    fun importSettings(settings: Map<String, Any>) {
+    fun importSettings(settings: Map<String, Any?>) {
         val editor = prefs.edit()
         
         for ((key, value) in settings) {
