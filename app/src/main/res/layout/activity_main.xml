@@ -4,59 +4,66 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     tools:ignore="HardcodedText,ButtonStyle,LabelFor">
 
-    <!-- 标题 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="AutoScript"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="16dp" />
-
-    <!-- 文件名 -->
+    <!-- 顶部工具栏 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingBottom="8dp">
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:background="#4CAF50">
 
-        <EditText
-            android:id="@+id/etFileName"
+        <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="文件名 (script.js)"
-            android:inputType="text"
-            android:singleLine="true"
-            android:autofillHints="filename"
-            android:importantForAutofill="no" />
+            android:text="AutoScript"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
 
         <Button
             android:id="@+id/btnSave"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="保存" />
+            android:layout_height="36dp"
+            android:text="保存"
+            android:textSize="12sp"
+            android:layout_marginEnd="4dp" />
 
         <Button
             android:id="@+id/btnLoad"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="加载" />
+            android:layout_height="36dp"
+            android:text="加载"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- 脚本编辑区 -->
+    <!-- 文件名输入 -->
+    <EditText
+        android:id="@+id/etFileName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="文件名 (script.js)"
+        android:inputType="text"
+        android:singleLine="true"
+        android:autofillHints="filename"
+        android:importantForAutofill="no"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:textSize="14sp" />
+
+    <!-- 代码编辑区 - 主要区域 -->
     <EditText
         android:id="@+id/etScript"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:minHeight="200dp"
+        android:minHeight="150dp"
         android:inputType="textMultiLine"
-        android:hint="在此输入 JavaScript 脚本&#10;&#10;可用函数:&#10;click(x, y) - 点击坐标&#10;longClick(x, y) - 长按&#10;swipe(x1,y1,x2,y2) - 滑动&#10;input(text) - 输入文字&#10;back() - 返回&#10;home() - 主页&#10;sleep(ms) - 延迟&#10;log(msg) - 输出日志&#10;toast(msg) - 显示提示&#10;&#10;节点操作:&#10;clickText(text) - 通过文本点击&#10;clickId(id) - 通过ID点击&#10;findText(text) - 查找文本&#10;&#10;识图操作:&#10;findImage(path) - 查找图片&#10;findAndClick(path) - 查找并点击&#10;&#10;颜色操作:&#10;getColor(x,y) - 获取颜色&#10;findColor(hex) - 查找颜色&#10;colorMatch(x,y,hex) - 颜色匹配"
+        android:hint="在此输入 JavaScript 脚本..."
         android:gravity="top"
         android:fontFamily="monospace"
         android:textSize="14sp"
@@ -66,133 +73,140 @@
         android:scrollbars="vertical"
         android:importantForAutofill="no" />
 
-    <!-- 控制按钮 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingTop="8dp"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnRun"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="▶ 运行"
-            android:backgroundTint="#4CAF50" />
-
-        <Button
-            android:id="@+id/btnStop"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:text="⏹ 停止"
-            android:backgroundTint="#F44336" />
-
-        <Button
-            android:id="@+id/btnSample"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="示例" />
-    </LinearLayout>
-
-    <!-- 权限按钮 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingTop="8dp"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnFloating"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="悬浮窗" />
-
-        <Button
-            android:id="@+id/btnScreenCapture"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:text="截屏" />
-
-        <Button
-            android:id="@+id/btnCoordPicker"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="坐标拾取" />
-
-        <Button
-            android:id="@+id/btnFilePool"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="文件池" />
-    </LinearLayout>
-
-    <!-- 积木编程按钮 -->
-    <Button
-        android:id="@+id/btnBlockEditor"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="🧩 积木编程 (可视化)"
-        android:backgroundTint="#673AB7" />
-
-    <!-- 日志区 -->
+    <!-- 底部控制区 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="8dp">
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:background="#F5F5F5">
 
+        <!-- 第一行按钮：运行控制 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginBottom="4dp">
+
+            <Button
+                android:id="@+id/btnRun"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="▶ 运行"
+                android:textSize="12sp"
+                android:backgroundTint="#4CAF50"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnStop"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="⏹ 停止"
+                android:textSize="12sp"
+                android:backgroundTint="#F44336"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnSample"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="示例"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 第二行按钮：工具 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="4dp">
+
+            <Button
+                android:id="@+id/btnFloating"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="悬浮窗"
+                android:textSize="11sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnScreenCapture"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="截屏"
+                android:textSize="11sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnCoordPicker"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="坐标"
+                android:textSize="11sp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnFilePool"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="文件池"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- 积木编程按钮 -->
+        <Button
+            android:id="@+id/btnBlockEditor"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="🧩 积木编程 (可视化)"
+            android:textSize="13sp"
+            android:backgroundTint="#9C27B0"
+            android:layout_marginBottom="4dp" />
+
+        <!-- 日志区 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="日志输出"
+                android:text="日志"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <Button
                 android:id="@+id/btnClearLog"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="32dp"
                 android:text="清空"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <ScrollView
             android:id="@+id/scrollLog"
             android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:background="#F5F5F5"
-            android:padding="8dp">
+            android:layout_height="80dp"
+            android:background="#FFFFFF"
+            android:padding="4dp">
 
             <TextView
                 android:id="@+id/tvLog"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </ScrollView>
     </LinearLayout>
 
