@@ -207,6 +207,28 @@ class MainActivity : AppCompatActivity() {
         } else {
             binding.btnScreenCapture.text = "截屏"
         }
+        
+        // 坐标拾取按钮 - 需要悬浮窗权限
+        binding.btnCoordPicker.setOnClickListener {
+            if (!Settings.canDrawOverlays(this)) {
+                AlertDialog.Builder(this)
+                    .setTitle("需要悬浮窗权限")
+                    .setMessage("坐标拾取功能需要悬浮窗权限，请先开启悬浮窗")
+                    .setPositiveButton("去设置") { _, _ ->
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+            } else {
+                // 启动悬浮窗服务
+                startFloatingService()
+                Toast.makeText(this, "悬浮窗已开启，点击📍按钮拾取坐标", Toast.LENGTH_LONG).show()
+            }
+        }
     }
     
     private fun isAccessibilityEnabled(): Boolean {

@@ -54,6 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:minHeight="200dp"
         android:inputType="textMultiLine"
         android:hint="在此输入 JavaScript 脚本&#10;&#10;可用函数:&#10;click(x, y) - 点击坐标&#10;longClick(x, y) - 长按&#10;swipe(x1,y1,x2,y2) - 滑动&#10;input(text) - 输入文字&#10;back() - 返回&#10;home() - 主页&#10;sleep(ms) - 延迟&#10;log(msg) - 输出日志&#10;toast(msg) - 显示提示&#10;&#10;节点操作:&#10;clickText(text) - 通过文本点击&#10;clickId(id) - 通过ID点击&#10;findText(text) - 查找文本&#10;&#10;识图操作:&#10;findImage(path) - 查找图片&#10;findAndClick(path) - 查找并点击&#10;&#10;颜色操作:&#10;getColor(x,y) - 获取颜色&#10;findColor(hex) - 查找颜色&#10;colorMatch(x,y,hex) - 颜色匹配"
         android:gravity="top"
@@ -118,6 +119,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="截屏" />
+
+        <Button
+            android:id="@+id/btnCoordPicker"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="坐标拾取" />
     </LinearLayout>
 
     <!-- 日志区 -->

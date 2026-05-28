@@ -17,6 +17,7 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 
 /**
  * 悬浮窗服务
@@ -44,6 +45,10 @@ class FloatingWindowService : Service() {
     var onStopClick: (() -> Unit)? = null
     var onLogUpdate: ((String) -> Unit)? = null
     
+    // 坐标拾取模式
+    private var isCoordinatePickerMode = false
+    private var coordinateOverlay: View? = null
+    
     override fun onBind(intent: Intent?): IBinder? = null
     
     override fun onCreate() {
@@ -58,11 +63,20 @@ class FloatingWindowService : Service() {
         super.onDestroy()
         instance = null
         isRunning = false
+        isCoordinatePickerMode = false
         try {
             windowManager.removeView(floatingView)
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        coordinateOverlay?.let {
+            try {
+                windowManager.removeView(it)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        coordinateOverlay = null
     }
     
     private fun createNotificationChannel() {
@@ -178,6 +192,17 @@ class FloatingWindowService : Service() {
         }
         buttonLayout.addView(closeBtn)
         
+        // 坐标拾取按钮
+        val coordBtn = Button(this).apply {
+            text = "📍"
+            textSize = 16f
+            tag = "coordBtn"
+            setOnClickListener {
+                toggleCoordinatePicker()
+            }
+        }
+        buttonLayout.addView(coordBtn)
+        
         layout.addView(buttonLayout)
         
         return layout
@@ -212,5 +237,91 @@ class FloatingWindowService : Service() {
     
     fun updateStatus(status: String) {
         floatingView.findViewWithTag<TextView>("status")?.text = status
+    }
+    
+    private fun toggleCoordinatePicker() {
+        if (isCoordinatePickerMode) {
+            exitCoordinatePickerMode()
+        } else {
+            enterCoordinatePickerMode()
+        }
+    }
+    
+    private fun enterCoordinatePickerMode() {
+        isCoordinatePickerMode = true
+        floatingView.findViewWithTag<Button>("coordBtn")?.text = "❌"
+        floatingView.findViewWithTag<TextView>("status")?.text = "点击屏幕获取坐标"
+        
+        // 更新悬浮窗为不拦截触摸事件
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        windowManager.updateViewLayout(floatingView, layoutParams)
+        
+        // 创建全屏透明覆盖层用于接收触摸事件
+        val overlay = View(this).apply {
+            setBackgroundColor(0x10FFFFFF)  // 半透明白色，让用户知道处于拾取模式
+        }
+        
+        val overlayParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        )
+        
+        overlay.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_UP) {
+                val x = event.rawX.toInt()
+                val y = event.rawY.toInt()
+                val coordText = "($x, $y)"
+                
+                // 复制坐标到剪贴板
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("坐标", coordText)
+                clipboard.setPrimaryClip(clip)
+                
+                Toast.makeText(this, "坐标: $coordText (已复制)", Toast.LENGTH_SHORT).show()
+                floatingView.findViewWithTag<TextView>("status")?.text = "坐标: $coordText"
+                
+                exitCoordinatePickerMode()
+                true
+            } else {
+                false
+            }
+        }
+        
+        try {
+            windowManager.addView(overlay, overlayParams)
+            coordinateOverlay = overlay
+        } catch (e: Exception) {
+            e.printStackTrace()
+            exitCoordinatePickerMode()
+        }
+    }
+    
+    private fun exitCoordinatePickerMode() {
+        isCoordinatePickerMode = false
+        floatingView.findViewWithTag<Button>("coordBtn")?.text = "📍"
+        floatingView.findViewWithTag<TextView>("status")?.text = "就绪"
+        
+        // 恢复悬浮窗触摸拦截
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        windowManager.updateViewLayout(floatingView, layoutParams)
+        
+        // 移除覆盖层
+        coordinateOverlay?.let {
+            try {
+                windowManager.removeView(it)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        coordinateOverlay = null
     }
 }
