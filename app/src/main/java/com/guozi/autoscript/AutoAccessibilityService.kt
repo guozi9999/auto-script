@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Intent
 import android.graphics.Path
-import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -45,8 +44,6 @@ class AutoAccessibilityService : AccessibilityService() {
      * 点击指定坐标
      */
     fun click(x: Int, y: Int): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
-        
         val path = Path().apply {
             moveTo(x.toFloat(), y.toFloat())
         }
@@ -62,8 +59,6 @@ class AutoAccessibilityService : AccessibilityService() {
      * 长按指定坐标
      */
     fun longClick(x: Int, y: Int, duration: Long = 1000): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
-        
         val path = Path().apply {
             moveTo(x.toFloat(), y.toFloat())
         }
@@ -79,8 +74,6 @@ class AutoAccessibilityService : AccessibilityService() {
      * 滑动操作
      */
     fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, duration: Long = 300): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
-        
         val path = Path().apply {
             moveTo(x1.toFloat(), y1.toFloat())
             lineTo(x2.toFloat(), y2.toFloat())

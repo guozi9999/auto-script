@@ -3,7 +3,6 @@ package com.guozi.autoscript
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
-import android.os.Build
 import android.util.Log
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -227,8 +226,6 @@ class GestureRecorder(private val service: AccessibilityService) {
     }
     
     private fun performClick(x: Int, y: Int) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
-        
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val gesture = GestureDescription.Builder()
             .addStroke(GestureDescription.StrokeDescription(path, 0, 100))
@@ -238,8 +235,6 @@ class GestureRecorder(private val service: AccessibilityService) {
     }
     
     private fun performLongClick(x: Int, y: Int, duration: Long) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
-        
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val gesture = GestureDescription.Builder()
             .addStroke(GestureDescription.StrokeDescription(path, 0, duration))
@@ -249,8 +244,6 @@ class GestureRecorder(private val service: AccessibilityService) {
     }
     
     private fun performSwipe(x1: Int, y1: Int, x2: Int, y2: Int, duration: Long) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
-        
         val path = Path().apply {
             moveTo(x1.toFloat(), y1.toFloat())
             lineTo(x2.toFloat(), y2.toFloat())

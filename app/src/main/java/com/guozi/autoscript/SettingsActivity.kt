@@ -1,5 +1,6 @@
 package com.guozi.autoscript
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -7,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 /**
  * 设置界面
  */
+@SuppressLint("SetTextI18n")
 class SettingsActivity : AppCompatActivity() {
     
     private lateinit var settingsManager: SettingsManager

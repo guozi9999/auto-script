@@ -1,8 +1,10 @@
 package com.guozi.autoscript
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -20,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var scriptRunner: ScriptRunner
     
+    @SuppressLint("SdCardPath")
     // 示例脚本
     private val sampleScripts = mapOf(
         "简单点击" to """
@@ -262,7 +265,11 @@ class MainActivity : AppCompatActivity() {
     
     private fun startFloatingService() {
         val intent = Intent(this, FloatingWindowService::class.java)
-        startForegroundService(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
         Toast.makeText(this, "悬浮窗已开启", Toast.LENGTH_SHORT).show()
     }
     

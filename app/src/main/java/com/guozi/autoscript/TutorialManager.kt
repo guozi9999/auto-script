@@ -1,5 +1,6 @@
 package com.guozi.autoscript
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 
@@ -7,6 +8,7 @@ import android.util.Log
  * 教程管理器
  * 提供内置教程和示例脚本
  */
+@SuppressLint("SdCardPath")
 class TutorialManager(private val context: Context) {
     
     companion object {

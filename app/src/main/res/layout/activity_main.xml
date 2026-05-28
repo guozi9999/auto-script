@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:ignore="HardcodedText,ButtonStyle,LabelFor">
 
     <!-- 标题 -->
     <TextView
@@ -29,7 +31,9 @@
             android:layout_weight="1"
             android:hint="文件名 (script.js)"
             android:inputType="text"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:autofillHints="filename"
+            android:importantForAutofill="no" />
 
         <Button
             android:id="@+id/btnSave"
@@ -50,6 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:inputType="textMultiLine"
         android:hint="在此输入 JavaScript 脚本&#10;&#10;可用函数:&#10;click(x, y) - 点击坐标&#10;longClick(x, y) - 长按&#10;swipe(x1,y1,x2,y2) - 滑动&#10;input(text) - 输入文字&#10;back() - 返回&#10;home() - 主页&#10;sleep(ms) - 延迟&#10;log(msg) - 输出日志&#10;toast(msg) - 显示提示&#10;&#10;节点操作:&#10;clickText(text) - 通过文本点击&#10;clickId(id) - 通过ID点击&#10;findText(text) - 查找文本&#10;&#10;识图操作:&#10;findImage(path) - 查找图片&#10;findAndClick(path) - 查找并点击&#10;&#10;颜色操作:&#10;getColor(x,y) - 获取颜色&#10;findColor(hex) - 查找颜色&#10;colorMatch(x,y,hex) - 颜色匹配"
         android:gravity="top"
         android:fontFamily="monospace"
@@ -57,7 +62,8 @@
         android:background="#1E1E1E"
         android:textColor="#FFFFFF"
         android:padding="8dp"
-        android:scrollbars="vertical" />
+        android:scrollbars="vertical"
+        android:importantForAutofill="no" />
 
     <!-- 控制按钮 -->
     <LinearLayout

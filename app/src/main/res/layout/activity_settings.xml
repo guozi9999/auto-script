@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:ignore="HardcodedText,ButtonStyle,LabelFor">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -66,7 +68,8 @@
                 android:layout_height="wrap_content"
                 android:min="10"
                 android:max="24"
-                android:progress="14" />
+                android:progress="14"
+                tools:ignore="UnusedAttribute" />
 
             <TextView
                 android:id="@+id/tvFontSize"
@@ -164,7 +167,8 @@
                 android:layout_height="wrap_content"
                 android:min="50"
                 android:max="100"
-                android:progress="80" />
+                android:progress="80"
+                tools:ignore="UnusedAttribute" />
 
             <TextView
                 android:id="@+id/tvConfidence"
@@ -192,7 +196,9 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:text="100" />
+                android:text="100"
+                android:importantForAutofill="no"
+                android:hint="@null" />
         </LinearLayout>
 
         <LinearLayout
@@ -213,7 +219,9 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:text="50" />
+                android:text="50"
+                android:importantForAutofill="no"
+                android:hint="@null" />
         </LinearLayout>
 
         <LinearLayout
@@ -234,7 +242,9 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:text="300" />
+                android:text="300"
+                android:importantForAutofill="no"
+                android:hint="@null" />
         </LinearLayout>
 
         <!-- 分隔线 -->
@@ -281,7 +291,8 @@
                 android:layout_height="wrap_content"
                 android:min="30"
                 android:max="100"
-                android:progress="80" />
+                android:progress="80"
+                tools:ignore="UnusedAttribute" />
 
             <TextView
                 android:id="@+id/tvOpacity"
@@ -334,7 +345,9 @@
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:text="24" />
+                android:text="24"
+                android:importantForAutofill="no"
+                android:hint="@null" />
         </LinearLayout>
 
         <!-- 按钮 -->

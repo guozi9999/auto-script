@@ -5,11 +5,6 @@
     
     <!-- 设置界面 -->
     <string name="settings">设置</string>
-    <string name="appearance">外观</string>
-    <string name="editor">编辑器</string>
-    <string name="automation">自动化</string>
-    <string name="floating_window">悬浮窗</string>
-    <string name="advanced">高级</string>
     
     <!-- 主题选项 -->
     <string-array name="theme_options">
@@ -26,19 +21,4 @@
         <item>警告</item>
         <item>错误</item>
     </string-array>
-    
-    <!-- 按钮 -->
-    <string name="save">保存</string>
-    <string name="cancel">取消</string>
-    <string name="reset">重置</string>
-    <string name="confirm">确认</string>
-    <string name="run">运行</string>
-    <string name="stop">停止</string>
-    
-    <!-- 提示信息 -->
-    <string name="script_saved">脚本已保存</string>
-    <string name="script_loaded">脚本已加载</string>
-    <string name="script_deleted">脚本已删除</string>
-    <string name="settings_saved">设置已保存</string>
-    <string name="settings_reset">已重置为默认设置</string>
 </resources>

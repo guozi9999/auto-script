@@ -1,5 +1,6 @@
 package com.guozi.autoscript
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -21,8 +22,10 @@ import android.widget.TextView
  * 悬浮窗服务
  * 提供控制脚本执行的悬浮按钮
  */
+@SuppressLint("StaticFieldLeak")
 class FloatingWindowService : Service() {
     
+    @Suppress("StaticFieldLeak")
     companion object {
         private const val CHANNEL_ID = "auto_script_channel"
         private const val NOTIFICATION_ID = 1
@@ -186,6 +189,7 @@ class FloatingWindowService : Service() {
         var initialTouchX = 0f
         var initialTouchY = 0f
         
+        @Suppress("ClickableViewAccessibility")
         floatingView.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
