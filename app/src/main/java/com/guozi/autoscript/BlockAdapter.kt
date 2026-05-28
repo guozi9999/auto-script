@@ -91,5 +91,9 @@ class BlockAdapter(
             }
         }
         notifyItemMoved(fromPosition, toPosition)
+        // 更新受影响位置的序号
+        val minPos = minOf(fromPosition, toPosition)
+        val maxPos = maxOf(fromPosition, toPosition)
+        notifyItemRangeChanged(minPos, maxPos - minPos + 1)
     }
 }

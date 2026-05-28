@@ -79,6 +79,55 @@ enum class BlockType(
         color = 0xFFFFC107,
         paramKeys = listOf("提示内容"),
         paramDefaults = listOf("任务完成")
+    ),
+    FIND_IMAGE(
+        displayName = "查找图片",
+        icon = "🖼️",
+        color = 0xFF673AB7,
+        paramKeys = listOf("图片路径"),
+        paramDefaults = listOf("/sdcard/template.png")
+    ),
+    FIND_AND_CLICK(
+        displayName = "识图点击",
+        icon = "🔍",
+        color = 0xFF5C6BC0,
+        paramKeys = listOf("图片路径"),
+        paramDefaults = listOf("/sdcard/template.png")
+    ),
+    GET_COLOR(
+        displayName = "获取颜色",
+        icon = "🎨",
+        color = 0xFF795548,
+        paramKeys = listOf("X 坐标", "Y 坐标"),
+        paramDefaults = listOf("540", "960")
+    ),
+    FIND_COLOR(
+        displayName = "查找颜色",
+        icon = "🔎",
+        color = 0xFF8BC34A,
+        paramKeys = listOf("颜色值(HEX)"),
+        paramDefaults = listOf("#FF0000")
+    ),
+    COLOR_MATCH(
+        displayName = "颜色匹配",
+        icon = "✅",
+        color = 0xFF009688,
+        paramKeys = listOf("X 坐标", "Y 坐标", "颜色值(HEX)"),
+        paramDefaults = listOf("540", "960", "#FF0000")
+    ),
+    CLICK_ID(
+        displayName = "点击ID元素",
+        icon = "🏷️",
+        color = 0xFF3F51B5,
+        paramKeys = listOf("元素ID"),
+        paramDefaults = listOf("btn_submit")
+    ),
+    FIND_TEXT(
+        displayName = "查找文本",
+        icon = "📄",
+        color = 0xFF00BCD4,
+        paramKeys = listOf("文本内容"),
+        paramDefaults = listOf("确定")
     );
 
     /**
@@ -96,6 +145,13 @@ enum class BlockType(
             CLICK_TEXT -> "点击文本: ${params.getOrElse(0) { "确定" }}"
             LOG -> "记录日志: ${params.getOrElse(0) { "完成" }}"
             TOAST -> "显示提示: ${params.getOrElse(0) { "任务完成" }}"
+            FIND_IMAGE -> "查找图片: ${params.getOrElse(0) { "/sdcard/template.png" }}"
+            FIND_AND_CLICK -> "识图点击: ${params.getOrElse(0) { "/sdcard/template.png" }}"
+            GET_COLOR -> "获取颜色 (${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }})"
+            FIND_COLOR -> "查找颜色: ${params.getOrElse(0) { "#FF0000" }}"
+            COLOR_MATCH -> "颜色匹配 (${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}) = ${params.getOrElse(2) { "#FF0000" }}"
+            CLICK_ID -> "点击ID元素: ${params.getOrElse(0) { "btn_submit" }}"
+            FIND_TEXT -> "查找文本: ${params.getOrElse(0) { "确定" }}"
         }
     }
 
@@ -114,6 +170,13 @@ enum class BlockType(
             CLICK_TEXT -> "clickText(\"${params.getOrElse(0) { "确定" }}\");"
             LOG -> "log(\"${params.getOrElse(0) { "完成" }}\");"
             TOAST -> "toast(\"${params.getOrElse(0) { "任务完成" }}\");"
+            FIND_IMAGE -> "findImage(\"${params.getOrElse(0) { "/sdcard/template.png" }}\");"
+            FIND_AND_CLICK -> "findAndClick(\"${params.getOrElse(0) { "/sdcard/template.png" }}\");"
+            GET_COLOR -> "getColor(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }});"
+            FIND_COLOR -> "findColor(\"${params.getOrElse(0) { "#FF0000" }}\");"
+            COLOR_MATCH -> "colorMatch(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}, \"${params.getOrElse(2) { "#FF0000" }}\");"
+            CLICK_ID -> "clickId(\"${params.getOrElse(0) { "btn_submit" }}\");"
+            FIND_TEXT -> "findText(\"${params.getOrElse(0) { "确定" }}\");"
         }
     }
 }
