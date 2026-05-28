@@ -48,6 +48,18 @@
             android:exported="false"
             android:label="@string/settings" />
 
+        <!-- 文件池 -->
+        <activity
+            android:name=".FilePoolActivity"
+            android:exported="false"
+            android:label="File Pool" />
+
+        <!-- 积木块编辑器 -->
+        <activity
+            android:name=".BlockEditorActivity"
+            android:exported="false"
+            android:label="积木编程" />
+
         <!-- 无障碍服务 -->
         <service
             android:name=".AutoAccessibilityService"

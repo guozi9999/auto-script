@@ -79,6 +79,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginEnd="4dp"
             android:text="▶ 运行"
             android:backgroundTint="#4CAF50" />
 
@@ -87,6 +88,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:text="⏹ 停止"
             android:backgroundTint="#F44336" />
 
@@ -95,6 +98,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
             android:text="示例" />
     </LinearLayout>
 
@@ -111,6 +115,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginEnd="4dp"
             android:text="悬浮窗" />
 
         <Button
@@ -118,6 +123,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:text="截屏" />
 
         <Button
@@ -125,8 +132,26 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
             android:text="坐标拾取" />
+
+        <Button
+            android:id="@+id/btnFilePool"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="文件池" />
     </LinearLayout>
+
+    <!-- 积木编程按钮 -->
+    <Button
+        android:id="@+id/btnBlockEditor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="🧩 积木编程 (可视化)"
+        android:backgroundTint="#673AB7" />
 
     <!-- 日志区 -->
     <LinearLayout

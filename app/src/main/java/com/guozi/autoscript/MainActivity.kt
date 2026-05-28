@@ -2,6 +2,7 @@ package com.guozi.autoscript
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -130,6 +131,9 @@ class MainActivity : AppCompatActivity() {
         
         setupViews()
         checkPermissions()
+        
+        // 处理从积木编辑器传来的脚本
+        handleIncomingScript()
     }
     
     private fun setupViews() {
@@ -183,12 +187,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // 截屏权限按钮
+        // 截屏按钮
         binding.btnScreenCapture.setOnClickListener {
             if (!scriptRunner.getScreenCapture().hasPermission()) {
                 requestScreenCapturePermission()
             } else {
-                Toast.makeText(this, "截屏权限已获取", Toast.LENGTH_SHORT).show()
+                // 有权限时执行截屏
+                performScreenCapture()
             }
         }
     }
@@ -228,6 +233,16 @@ class MainActivity : AppCompatActivity() {
                 startFloatingService()
                 Toast.makeText(this, "悬浮窗已开启，点击📍按钮拾取坐标", Toast.LENGTH_LONG).show()
             }
+        }
+        
+        // 文件池按钮
+        binding.btnFilePool.setOnClickListener {
+            startActivity(Intent(this, FilePoolActivity::class.java))
+        }
+        
+        // 积木编程按钮
+        binding.btnBlockEditor.setOnClickListener {
+            startActivity(Intent(this, BlockEditorActivity::class.java))
         }
     }
     
@@ -340,6 +355,35 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
     
+    private fun performScreenCapture() {
+        Toast.makeText(this, "正在截屏...", Toast.LENGTH_SHORT).show()
+        
+        Thread {
+            val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+                .format(java.util.Date())
+            val fileName = "screenshot_$timestamp.png"
+            val file = java.io.File(getExternalFilesDir("screenshots"), fileName)
+            
+            val success = scriptRunner.getScreenCapture().captureToFile(file.absolutePath)
+            
+            runOnUiThread {
+                if (success) {
+                    Toast.makeText(this, "截屏已保存: ${file.name}", Toast.LENGTH_LONG).show()
+                    appendLog("截屏已保存: ${file.absolutePath}")
+                    
+                    // 复制路径到剪贴板
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("screenshot_path", file.absolutePath)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(this, "路径已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "截屏失败", Toast.LENGTH_SHORT).show()
+                    appendLog("截屏失败")
+                }
+            }
+        }.start()
+    }
+    
     private fun appendLog(message: String) {
         val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
@@ -351,6 +395,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun handleIncomingScript() {
+        val script = intent.getStringExtra("run_script")
+        if (!script.isNullOrBlank()) {
+            binding.etScript.setText(script)
+            // 自动运行
+            if (!isAccessibilityEnabled()) {
+                showAccessibilityDialog()
+            } else {
+                scriptRunner.execute(script)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingScript()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         scriptRunner.destroy()

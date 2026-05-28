@@ -21,4 +21,9 @@
         <item>警告</item>
         <item>错误</item>
     </string-array>
+    
+    <!-- 文件池 -->
+    <string name="file_pool_path_hint">Image path: /sdcard/Android/data/com.guozi.autoscript/files/images/</string>
+    <string name="file_pool_empty">No images yet, click Select Image to import</string>
+    <string name="file_pool_tip">Tip: Click to copy path, long press to delete</string>
 </resources>
