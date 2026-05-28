@@ -44,9 +44,48 @@ jobs:
         path: app/build/outputs/apk/release/*.apk
         retention-days: 30
 
+    - name: Get version name
+      id: version
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        VERSION=$(grep 'versionName' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: AutoScript ${{ steps.version.outputs.version }}
+        body: |
+          ## AutoScript ${{ steps.version.outputs.version }}
+          
+          Android 自动化脚本工具 - 类似 Auto.js，使用 JavaScript 编写自动化脚本
+          
+          ### 下载
+          - **app-debug.apk** - 调试版本
+          - **app-release.apk** - 发布版本
+          
+          ### 功能
+          - 点击、滑动、输入、按键等基础操作
+          - 节点查找（通过文本/ID）
+          - 识图操作（模板匹配）
+          - 颜色检测
+          - OCR 文字识别（支持中文）
+          - 文件读写
+          - HTTP 请求
+          - 定时器
+        files: |
+          app/build/outputs/apk/debug/*.apk
+          app/build/outputs/apk/release/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     runs-on: ubuntu-latest
-
 
     steps:
     - name: Checkout code
