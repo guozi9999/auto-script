@@ -65,12 +65,18 @@ class BlockAdapter(
 
         // 点击编辑
         binding.root.setOnClickListener {
-            onBlockClick(position)
+            val currentPosition = holder.adapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                onBlockClick(currentPosition)
+            }
         }
 
         // 长按删除
         binding.root.setOnLongClickListener {
-            onBlockLongClick(position)
+            val currentPosition = holder.adapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                onBlockLongClick(currentPosition)
+            }
             true
         }
     }

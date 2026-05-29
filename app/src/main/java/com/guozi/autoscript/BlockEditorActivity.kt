@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.EditText
@@ -142,6 +143,8 @@ class BlockEditorActivity : AppCompatActivity() {
      * 显示编辑对话框
      */
     private fun showEditDialog(position: Int) {
+        if (position !in blocks.indices) return
+        
         val block = blocks[position]
         val type = block.type
 
@@ -171,7 +174,7 @@ class BlockEditorActivity : AppCompatActivity() {
             layout.addView(label)
 
             val editText = EditText(this).apply {
-                setText(block.params.getOrElse(index) { type.paramDefaults[index] })
+                setText(block.params.getOrElse(index) { type.paramDefaults.getOrElse(index) { "" } })
                 textSize = 16f
                 setPadding(16, 12, 16, 12)
                 val bg = GradientDrawable().apply {
@@ -180,12 +183,7 @@ class BlockEditorActivity : AppCompatActivity() {
                     setStroke(2, Color.parseColor("#CCCCCC"))
                 }
                 background = bg
-                // 根据参数类型设置输入法
-                inputType = if (key.contains("文字") || key.contains("文本") || key.contains("内容")) {
-                    android.text.InputType.TYPE_CLASS_TEXT
-                } else {
-                    android.text.InputType.TYPE_CLASS_NUMBER
-                }
+                inputType = getInputTypeForParam(key)
             }
             layout.addView(editText)
             editTexts.add(editText)
@@ -200,6 +198,8 @@ class BlockEditorActivity : AppCompatActivity() {
             editTexts.forEachIndexed { index, editText ->
                 if (index < block.params.size) {
                     block.params[index] = editText.text.toString()
+                } else {
+                    block.params.add(editText.text.toString())
                 }
             }
             adapter.notifyItemChanged(position)
@@ -233,7 +233,21 @@ class BlockEditorActivity : AppCompatActivity() {
      */
     private fun generateJsCode(): String {
         if (blocks.isEmpty()) return ""
-        return blocks.joinToString("\n") { it.toJsCode() }
+        
+        val lines = mutableListOf<String>()
+        var indent = 0
+        blocks.forEach { block ->
+            if (block.type.closesCodeBlockBeforeLine()) {
+                indent = maxOf(0, indent - 1)
+            }
+            
+            lines.add("    ".repeat(indent) + block.toJsCode())
+            
+            if (block.type.opensCodeBlock()) {
+                indent++
+            }
+        }
+        return lines.joinToString("\n")
     }
 
     /**
@@ -243,6 +257,10 @@ class BlockEditorActivity : AppCompatActivity() {
         val code = generateJsCode()
         if (code.isBlank()) {
             Toast.makeText(this, "没有积木块，无法生成代码", Toast.LENGTH_SHORT).show()
+            return
+        }
+        validateBranchBlocks()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
         }
 
@@ -266,6 +284,10 @@ class BlockEditorActivity : AppCompatActivity() {
         val code = generateJsCode()
         if (code.isBlank()) {
             Toast.makeText(this, "没有积木块，无法保存", Toast.LENGTH_SHORT).show()
+            return
+        }
+        validateBranchBlocks()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
         }
 
@@ -297,6 +319,10 @@ class BlockEditorActivity : AppCompatActivity() {
         val code = generateJsCode()
         if (code.isBlank()) {
             Toast.makeText(this, "没有积木块，无法运行", Toast.LENGTH_SHORT).show()
+            return
+        }
+        validateBranchBlocks()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
         }
 
@@ -340,5 +366,51 @@ class BlockEditorActivity : AppCompatActivity() {
      */
     private fun updateBlockCount() {
         binding.tvBlockCount.text = "共 ${blocks.size} 块"
+    }
+    
+    private fun getInputTypeForParam(key: String): Int {
+        return if (key.contains("坐标") || key.contains("时间") || key.contains("毫秒")) {
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        }
+    }
+    
+    private fun validateBranchBlocks(): String? {
+        val branchStack = mutableListOf<Boolean>()
+        
+        blocks.forEachIndexed { index, block ->
+            when (block.type) {
+                BlockType.IF_TEXT_EXISTS,
+                BlockType.IF_COLOR_MATCH,
+                BlockType.IF_IMAGE_FOUND,
+                BlockType.IF_CUSTOM_CONDITION -> branchStack.add(false)
+                
+                BlockType.ELSE -> {
+                    if (branchStack.isEmpty()) {
+                        return "第 ${index + 1} 块“否则”前缺少“如果”积木"
+                    }
+                    if (branchStack.last()) {
+                        return "第 ${index + 1} 块“否则”重复了"
+                    }
+                    branchStack[branchStack.lastIndex] = true
+                }
+                
+                BlockType.END_IF -> {
+                    if (branchStack.isEmpty()) {
+                        return "第 ${index + 1} 块“结束条件”前缺少“如果”积木"
+                    }
+                    branchStack.removeAt(branchStack.lastIndex)
+                }
+                
+                else -> Unit
+            }
+        }
+        
+        return if (branchStack.isNotEmpty()) {
+            "有 ${branchStack.size} 个“如果”积木缺少“结束条件”"
+        } else {
+            null
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.guozi.autoscript
 
 import android.content.Context
 import org.mozilla.javascript.Context as RhinoContext
+import org.mozilla.javascript.ContextFactory
 import org.mozilla.javascript.ScriptableObject
 
 /**
@@ -10,11 +11,23 @@ import org.mozilla.javascript.ScriptableObject
  */
 class JsEngine(private val context: Context) {
     
+    class ScriptStoppedException : RuntimeException("脚本已停止")
+    
     private var rhinoContext: RhinoContext? = null
     private var scope: ScriptableObject? = null
     private var screenCapture: ScreenCapture? = null
     private var ocrHelper: OcrHelper? = null
     private var extensions: ScriptExtensions? = null
+    @Volatile private var cancelled = false
+    @Volatile private var executionThread: Thread? = null
+    
+    private val contextFactory = object : ContextFactory() {
+        override fun observeInstructionCount(cx: RhinoContext, instructionCount: Int) {
+            if (cancelled || Thread.currentThread().isInterrupted) {
+                throw ScriptStoppedException()
+            }
+        }
+    }
     
     // API 接口
     interface ScriptApi {
@@ -57,12 +70,20 @@ class JsEngine(private val context: Context) {
     }
     
     fun init() {
-        rhinoContext = RhinoContext.enter()
+        cancelled = false
+        executionThread = Thread.currentThread()
+        rhinoContext = contextFactory.enterContext()
         rhinoContext!!.optimizationLevel = -1 // 解释模式，兼容 Android
+        rhinoContext!!.instructionObserverThreshold = 10000
         scope = rhinoContext!!.initStandardObjects()
         
         // 注入 API 函数
         injectFunctions()
+    }
+    
+    fun cancel() {
+        cancelled = true
+        executionThread?.interrupt()
     }
     
     private fun toInt(value: Any): Int {
@@ -132,7 +153,12 @@ class JsEngine(private val context: Context) {
         
         // sleep(millis) - 延迟
         registerFunction("sleep", 1) { args ->
-            Thread.sleep(toLong(args[0]))
+            try {
+                Thread.sleep(toLong(args[0]))
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                throw ScriptStoppedException()
+            }
         }
         
         // toast(message) - 显示提示
@@ -184,20 +210,26 @@ class JsEngine(private val context: Context) {
             
             if (screen == null || template == null) {
                 api.log("截图或模板加载失败")
+                screen?.recycle()
+                template?.recycle()
                 null
             } else {
-                val result = ImageFinder.findImage(screen, template, confidence)
-                template.recycle()
-                
-                if (result != null) {
-                    api.log("找到图片: (${result.x}, ${result.y}), 分数: ${result.score}")
-                    val coord = rhinoContext?.newObject(scope)
-                    coord?.put("x", coord, result.x)
-                    coord?.put("y", coord, result.y)
-                    coord
-                } else {
-                    api.log("未找到图片")
-                    null
+                try {
+                    val result = ImageFinder.findImage(screen, template, confidence)
+                    
+                    if (result != null) {
+                        api.log("找到图片: (${result.x}, ${result.y}), 分数: ${result.score}")
+                        val coord = rhinoContext?.newObject(scope)
+                        coord?.put("x", coord, result.x)
+                        coord?.put("y", coord, result.y)
+                        coord
+                    } else {
+                        api.log("未找到图片")
+                        null
+                    }
+                } finally {
+                    screen.recycle()
+                    template.recycle()
                 }
             }
         }
@@ -212,18 +244,24 @@ class JsEngine(private val context: Context) {
             
             if (screen == null || template == null) {
                 api.log("截图或模板加载失败")
+                screen?.recycle()
+                template?.recycle()
                 false
             } else {
-                val result = ImageFinder.findImage(screen, template, confidence)
-                template.recycle()
-                
-                if (result != null) {
-                    api.click(result.x, result.y)
-                    api.log("点击图片位置: (${result.x}, ${result.y})")
-                    true
-                } else {
-                    api.log("未找到图片")
-                    false
+                try {
+                    val result = ImageFinder.findImage(screen, template, confidence)
+                    
+                    if (result != null) {
+                        api.click(result.x, result.y)
+                        api.log("点击图片位置: (${result.x}, ${result.y})")
+                        true
+                    } else {
+                        api.log("未找到图片")
+                        false
+                    }
+                } finally {
+                    screen.recycle()
+                    template.recycle()
                 }
             }
         }
@@ -423,7 +461,18 @@ class JsEngine(private val context: Context) {
                 args: Array<out Any>
             ): Any {
                 return try {
+                    if (cancelled || Thread.currentThread().isInterrupted) {
+                        throw ScriptStoppedException()
+                    }
+                    if (args.size < argCount) {
+                        throw IllegalArgumentException("$name 需要 $argCount 个参数")
+                    }
                     handler(args) ?: RhinoContext.getUndefinedValue()
+                } catch (e: ScriptStoppedException) {
+                    throw e
+                } catch (e: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    throw ScriptStoppedException()
                 } catch (e: Exception) {
                     api?.log("错误: ${e.message}")
                     RhinoContext.getUndefinedValue()
@@ -435,20 +484,32 @@ class JsEngine(private val context: Context) {
     
     fun execute(script: String): String? {
         return try {
+            if (cancelled || Thread.currentThread().isInterrupted) {
+                throw ScriptStoppedException()
+            }
             val result = rhinoContext?.evaluateString(scope, script, "script", 1, null)
             if (result != null && result != RhinoContext.getUndefinedValue()) {
                 RhinoContext.toString(result)
             } else {
                 null
             }
+        } catch (e: ScriptStoppedException) {
+            throw e
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw ScriptStoppedException()
         } catch (e: Exception) {
             "Error: ${e.message}"
         }
     }
     
     fun destroy() {
-        RhinoContext.exit()
+        if (RhinoContext.getCurrentContext() === rhinoContext) {
+            RhinoContext.exit()
+        }
         rhinoContext = null
         scope = null
+        executionThread = null
+        cancelled = false
     }
 }

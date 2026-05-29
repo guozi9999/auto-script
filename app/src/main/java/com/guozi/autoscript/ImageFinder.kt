@@ -30,12 +30,20 @@ class ImageFinder {
             val screenW = screen.width
             val screenH = screen.height
             
+            if (templateW <= 0 || templateH <= 0 || templateW > screenW || templateH > screenH) {
+                Log.e(TAG, "模板尺寸无效: ${templateW}x$templateH, 屏幕尺寸: ${screenW}x$screenH")
+                return null
+            }
+            
             var bestScore = 0.0
             var bestX = 0
             var bestY = 0
             
             // 滑动窗口匹配
             for (y in 0..screenH - templateH) {
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("图片查找已停止")
+                }
                 for (x in 0..screenW - templateW) {
                     val score = calculateSimilarity(
                         screenPixels, screenW, x, y,
@@ -77,8 +85,16 @@ class ImageFinder {
             val screenW = screen.width
             val screenH = screen.height
             
+            if (templateW <= 0 || templateH <= 0 || templateW > screenW || templateH > screenH) {
+                Log.e(TAG, "模板尺寸无效: ${templateW}x$templateH, 屏幕尺寸: ${screenW}x$screenH")
+                return emptyList()
+            }
+            
             // 先计算所有位置的分数
             val scores = Array(screenH - templateH + 1) { y ->
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("图片查找已停止")
+                }
                 Array(screenW - templateW + 1) { x ->
                     calculateSimilarity(
                         screenPixels, screenW, x, y,
@@ -124,6 +140,9 @@ class ImageFinder {
             val totalPixels = templateW * templateH
             
             for (ty in 0 until templateH) {
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("图片查找已停止")
+                }
                 for (tx in 0 until templateW) {
                     val screenIdx = (offsetY + ty) * screenW + (offsetX + tx)
                     val templateIdx = ty * templateW + tx

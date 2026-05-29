@@ -100,12 +100,20 @@ class ColorHelper {
             if (target == -1) return emptyList()
             
             val results = mutableListOf<ColorMatchResult>()
-            val left = region?.left ?: 0
-            val top = region?.top ?: 0
-            val right = region?.right ?: bitmap.width
-            val bottom = region?.bottom ?: bitmap.height
+            val left = maxOf(0, region?.left ?: 0)
+            val top = maxOf(0, region?.top ?: 0)
+            val right = minOf(bitmap.width, region?.right ?: bitmap.width)
+            val bottom = minOf(bitmap.height, region?.bottom ?: bitmap.height)
+            
+            if (left >= right || top >= bottom) {
+                Log.e(TAG, "无效颜色查找区域: $region")
+                return emptyList()
+            }
             
             for (y in top until bottom) {
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("颜色查找已停止")
+                }
                 for (x in left until right) {
                     val pixel = bitmap.getPixel(x, y)
                     if (isColorSimilar(pixel, target, threshold)) {
@@ -162,6 +170,9 @@ class ColorHelper {
             val blocks = mutableListOf<ColorMatchResult>()
             
             for (y in 0 until bitmap.height) {
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("颜色块查找已停止")
+                }
                 for (x in 0 until bitmap.width) {
                     if (!visited[y][x]) {
                         val pixel = bitmap.getPixel(x, y)
@@ -201,6 +212,9 @@ class ColorHelper {
             visited[startY][startX] = true
             
             while (queue.isNotEmpty()) {
+                if (Thread.currentThread().isInterrupted) {
+                    throw InterruptedException("颜色块查找已停止")
+                }
                 val (x, y) = queue.removeFirst()
                 region.add(x to y)
                 

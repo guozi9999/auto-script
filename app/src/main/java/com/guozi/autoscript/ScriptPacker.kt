@@ -71,7 +71,7 @@ class ScriptPacker(private val context: Context) {
             val zipFile = File(exportDir, "$packName.aspack")
             
             ZipOutputStream(FileOutputStream(zipFile)).use { zip ->
-                for ((index, scriptPath) in scriptPaths.withIndex()) {
+                for (scriptPath in scriptPaths) {
                     val scriptFile = File(scriptPath)
                     if (scriptFile.exists()) {
                         addFileToZip(zip, scriptFile, "scripts/${scriptFile.name}")
@@ -104,11 +104,14 @@ class ScriptPacker(private val context: Context) {
                 return false
             }
             
-            val target = File(targetDir).apply { mkdirs() }
+            val target = File(targetDir).apply { mkdirs() }.canonicalFile
             
             java.util.zip.ZipFile(packFile).use { zip ->
                 zip.entries().asSequence().forEach { entry ->
-                    val entryFile = File(target, entry.name)
+                    val entryFile = File(target, entry.name).canonicalFile
+                    if (!isInsideDirectory(target, entryFile)) {
+                        throw SecurityException("非法压缩包路径: ${entry.name}")
+                    }
                     
                     if (entry.isDirectory) {
                         entryFile.mkdirs()
@@ -129,6 +132,12 @@ class ScriptPacker(private val context: Context) {
             Log.e(TAG, "解包失败: ${e.message}")
             false
         }
+    }
+    
+    private fun isInsideDirectory(parent: File, child: File): Boolean {
+        val parentPath = parent.canonicalPath
+        val childPath = child.canonicalPath
+        return childPath == parentPath || childPath.startsWith(parentPath + File.separator)
     }
     
     /**

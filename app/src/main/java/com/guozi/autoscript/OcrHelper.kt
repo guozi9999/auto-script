@@ -36,11 +36,12 @@ class OcrHelper(private val context: Context) {
      * @return 识别结果
      */
     suspend fun recognizeText(bitmap: Bitmap): OcrResult {
+        val textRecognizer = recognizer ?: throw IllegalStateException("OCR 已释放")
         val image = InputImage.fromBitmap(bitmap, 0)
         
         return suspendCancellableCoroutine { continuation ->
-            recognizer?.process(image)
-                ?.addOnSuccessListener { visionText ->
+            textRecognizer.process(image)
+                .addOnSuccessListener { visionText ->
                     val textBlocks = visionText.textBlocks.map { block ->
                         TextBlock(
                             text = block.text,
@@ -68,7 +69,7 @@ class OcrHelper(private val context: Context) {
                     Log.d(TAG, "识别完成: ${textBlocks.size} 个文本块")
                     continuation.resume(result)
                 }
-                ?.addOnFailureListener { e ->
+                .addOnFailureListener { e ->
                     Log.e(TAG, "识别失败: ${e.message}")
                     continuation.resumeWithException(e)
                 }
@@ -118,30 +119,45 @@ class OcrHelper(private val context: Context) {
         targetText: String,
         region: Rect
     ): List<TextMatchResult> {
+        val safeRegion = Rect(
+            maxOf(0, region.left),
+            maxOf(0, region.top),
+            minOf(bitmap.width, region.right),
+            minOf(bitmap.height, region.bottom)
+        )
+        if (safeRegion.isEmpty) {
+            Log.e(TAG, "无效 OCR 搜索区域: $region")
+            return emptyList()
+        }
+        
         // 裁剪图片
         val croppedBitmap = Bitmap.createBitmap(
             bitmap,
-            region.left,
-            region.top,
-            region.width(),
-            region.height()
+            safeRegion.left,
+            safeRegion.top,
+            safeRegion.width(),
+            safeRegion.height()
         )
         
-        // 在裁剪后的图片中查找
-        val matches = findText(croppedBitmap, targetText)
-        
-        // 调整坐标到原图坐标系
-        return matches.map { match ->
-            match.copy(
-                centerX = match.centerX + region.left,
-                centerY = match.centerY + region.top,
-                rect = Rect(
-                    match.rect.left + region.left,
-                    match.rect.top + region.top,
-                    match.rect.right + region.left,
-                    match.rect.bottom + region.top
+        return try {
+            // 在裁剪后的图片中查找
+            val matches = findText(croppedBitmap, targetText)
+            
+            // 调整坐标到原图坐标系
+            matches.map { match ->
+                match.copy(
+                    centerX = match.centerX + safeRegion.left,
+                    centerY = match.centerY + safeRegion.top,
+                    rect = Rect(
+                        match.rect.left + safeRegion.left,
+                        match.rect.top + safeRegion.top,
+                        match.rect.right + safeRegion.left,
+                        match.rect.bottom + safeRegion.top
+                    )
                 )
-            )
+            }
+        } finally {
+            croppedBitmap.recycle()
         }
     }
     

@@ -23,6 +23,8 @@ class ScriptRunner(private val context: Context) {
     private val extensions = ScriptExtensions { message -> log(message) }
     private val handler = Handler(Looper.getMainLooper())
     private var job: Job? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile
     var isRunning = false
         private set
     
@@ -213,34 +215,55 @@ class ScriptRunner(private val context: Context) {
         isRunning = true
         log("开始执行脚本...")
         
-        job = CoroutineScope(Dispatchers.IO).launch {
+        job = scope.launch {
             try {
                 jsEngine.init()
                 val result = jsEngine.execute(script)
                 
-                withContext(Dispatchers.Main) {
+                withContext(NonCancellable + Dispatchers.Main) {
                     if (result != null) {
                         log("脚本返回: $result")
                     }
                     log("脚本执行完成")
-                    isRunning = false
+                }
+            } catch (e: JsEngine.ScriptStoppedException) {
+                withContext(NonCancellable + Dispatchers.Main) {
+                    log("脚本已停止")
+                }
+            } catch (e: CancellationException) {
+                withContext(NonCancellable + Dispatchers.Main) {
+                    log("脚本已停止")
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(NonCancellable + Dispatchers.Main) {
                     log("错误: ${e.message}")
-                    isRunning = false
                 }
             } finally {
                 jsEngine.destroy()
+                withContext(NonCancellable + Dispatchers.Main) {
+                    isRunning = false
+                    job = null
+                }
             }
         }
     }
     
     fun stop() {
+        stop(logIfIdle = true)
+    }
+    
+    private fun stop(logIfIdle: Boolean) {
+        if (!isRunning) {
+            if (logIfIdle) {
+                log("没有正在运行的脚本")
+            }
+            return
+        }
+        
+        jsEngine.cancel()
         job?.cancel()
         extensions.clearAllTimers()
-        isRunning = false
-        log("脚本已停止")
+        log("正在停止脚本...")
     }
     
     private fun log(message: String) {
@@ -251,7 +274,8 @@ class ScriptRunner(private val context: Context) {
     }
     
     fun destroy() {
-        stop()
+        stop(logIfIdle = false)
+        scope.cancel()
         screenCapture.destroy()
         ocrHelper.destroy()
         extensions.destroy()

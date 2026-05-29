@@ -128,6 +128,48 @@ enum class BlockType(
         color = 0xFF00BCD4,
         paramKeys = listOf("文本内容"),
         paramDefaults = listOf("确定")
+    ),
+    IF_TEXT_EXISTS(
+        displayName = "如果找到文本",
+        icon = "🔀",
+        color = 0xFF1565C0,
+        paramKeys = listOf("文本内容"),
+        paramDefaults = listOf("确定")
+    ),
+    IF_COLOR_MATCH(
+        displayName = "如果颜色匹配",
+        icon = "🎯",
+        color = 0xFF00897B,
+        paramKeys = listOf("X 坐标", "Y 坐标", "颜色值(HEX)"),
+        paramDefaults = listOf("540", "960", "#FF0000")
+    ),
+    IF_IMAGE_FOUND(
+        displayName = "如果找到图片",
+        icon = "🖼️",
+        color = 0xFF512DA8,
+        paramKeys = listOf("图片路径"),
+        paramDefaults = listOf("/sdcard/template.png")
+    ),
+    IF_CUSTOM_CONDITION(
+        displayName = "如果自定义条件",
+        icon = "⚙️",
+        color = 0xFF455A64,
+        paramKeys = listOf("条件表达式"),
+        paramDefaults = listOf("true")
+    ),
+    ELSE(
+        displayName = "否则",
+        icon = "↪️",
+        color = 0xFFFF7043,
+        paramKeys = emptyList(),
+        paramDefaults = emptyList()
+    ),
+    END_IF(
+        displayName = "结束条件",
+        icon = "⏹️",
+        color = 0xFF757575,
+        paramKeys = emptyList(),
+        paramDefaults = emptyList()
     );
 
     /**
@@ -152,6 +194,12 @@ enum class BlockType(
             COLOR_MATCH -> "颜色匹配 (${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}) = ${params.getOrElse(2) { "#FF0000" }}"
             CLICK_ID -> "点击ID元素: ${params.getOrElse(0) { "btn_submit" }}"
             FIND_TEXT -> "查找文本: ${params.getOrElse(0) { "确定" }}"
+            IF_TEXT_EXISTS -> "如果找到文本: ${params.getOrElse(0) { "确定" }}"
+            IF_COLOR_MATCH -> "如果颜色匹配 (${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}) = ${params.getOrElse(2) { "#FF0000" }}"
+            IF_IMAGE_FOUND -> "如果找到图片: ${params.getOrElse(0) { "/sdcard/template.png" }}"
+            IF_CUSTOM_CONDITION -> "如果: ${params.getOrElse(0) { "true" }}"
+            ELSE -> "否则"
+            END_IF -> "结束条件"
         }
     }
 
@@ -163,20 +211,53 @@ enum class BlockType(
             CLICK -> "click(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }});"
             LONG_CLICK -> "longClick(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}, ${params.getOrElse(2) { "1000" }});"
             SWIPE -> "swipe(${params.getOrElse(0) { "100" }}, ${params.getOrElse(1) { "500" }}, ${params.getOrElse(2) { "100" }}, ${params.getOrElse(3) { "200" }});"
-            INPUT -> "input(\"${params.getOrElse(0) { "Hello" }}\");"
+            INPUT -> "input(${jsString(params.getOrElse(0) { "Hello" })});"
             SLEEP -> "sleep(${params.getOrElse(0) { "1000" }});"
             BACK -> "back();"
             HOME -> "home();"
-            CLICK_TEXT -> "clickText(\"${params.getOrElse(0) { "确定" }}\");"
-            LOG -> "log(\"${params.getOrElse(0) { "完成" }}\");"
-            TOAST -> "toast(\"${params.getOrElse(0) { "任务完成" }}\");"
-            FIND_IMAGE -> "findImage(\"${params.getOrElse(0) { "/sdcard/template.png" }}\");"
-            FIND_AND_CLICK -> "findAndClick(\"${params.getOrElse(0) { "/sdcard/template.png" }}\");"
+            CLICK_TEXT -> "clickText(${jsString(params.getOrElse(0) { "确定" })});"
+            LOG -> "log(${jsString(params.getOrElse(0) { "完成" })});"
+            TOAST -> "toast(${jsString(params.getOrElse(0) { "任务完成" })});"
+            FIND_IMAGE -> "findImage(${jsString(params.getOrElse(0) { "/sdcard/template.png" })});"
+            FIND_AND_CLICK -> "findAndClick(${jsString(params.getOrElse(0) { "/sdcard/template.png" })});"
             GET_COLOR -> "getColor(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }});"
-            FIND_COLOR -> "findColor(\"${params.getOrElse(0) { "#FF0000" }}\");"
-            COLOR_MATCH -> "colorMatch(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}, \"${params.getOrElse(2) { "#FF0000" }}\");"
-            CLICK_ID -> "clickId(\"${params.getOrElse(0) { "btn_submit" }}\");"
-            FIND_TEXT -> "findText(\"${params.getOrElse(0) { "确定" }}\");"
+            FIND_COLOR -> "findColor(${jsString(params.getOrElse(0) { "#FF0000" })});"
+            COLOR_MATCH -> "colorMatch(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}, ${jsString(params.getOrElse(2) { "#FF0000" })});"
+            CLICK_ID -> "clickId(${jsString(params.getOrElse(0) { "btn_submit" })});"
+            FIND_TEXT -> "findText(${jsString(params.getOrElse(0) { "确定" })});"
+            IF_TEXT_EXISTS -> "if (findText(${jsString(params.getOrElse(0) { "确定" })})) {"
+            IF_COLOR_MATCH -> "if (colorMatch(${params.getOrElse(0) { "540" }}, ${params.getOrElse(1) { "960" }}, ${jsString(params.getOrElse(2) { "#FF0000" })})) {"
+            IF_IMAGE_FOUND -> "if (findImage(${jsString(params.getOrElse(0) { "/sdcard/template.png" })})) {"
+            IF_CUSTOM_CONDITION -> "if (${params.getOrElse(0) { "true" }.ifBlank { "true" }}) {"
+            ELSE -> "} else {"
+            END_IF -> "}"
         }
+    }
+    
+    fun opensCodeBlock(): Boolean {
+        return when (this) {
+            IF_TEXT_EXISTS, IF_COLOR_MATCH, IF_IMAGE_FOUND, IF_CUSTOM_CONDITION, ELSE -> true
+            else -> false
+        }
+    }
+    
+    fun closesCodeBlockBeforeLine(): Boolean {
+        return this == ELSE || this == END_IF
+    }
+    
+    private fun jsString(value: String): String {
+        val escaped = buildString {
+            value.forEach { char ->
+                when (char) {
+                    '\\' -> append("\\\\")
+                    '"' -> append("\\\"")
+                    '\n' -> append("\\n")
+                    '\r' -> append("\\r")
+                    '\t' -> append("\\t")
+                    else -> append(char)
+                }
+            }
+        }
+        return "\"$escaped\""
     }
 }

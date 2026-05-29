@@ -89,8 +89,6 @@ class FilePoolActivity : AppCompatActivity() {
     
     private fun importImage(uri: Uri) {
         try {
-            val inputStream = contentResolver.openInputStream(uri) ?: return
-            
             // Get filename from URI
             val cursor = contentResolver.query(uri, null, null, null, null)
             val fileName = cursor?.use {
@@ -104,10 +102,16 @@ class FilePoolActivity : AppCompatActivity() {
             
             // Copy to app directory
             val destFile = File(imagesDir, fileName)
-            FileOutputStream(destFile).use { output ->
-                inputStream.copyTo(output)
+            val inputStream = contentResolver.openInputStream(uri)
+            if (inputStream == null) {
+                Toast.makeText(this, "Import failed: unable to open image", Toast.LENGTH_SHORT).show()
+                return
             }
-            inputStream.close()
+            inputStream.use { input ->
+                FileOutputStream(destFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
             
             Toast.makeText(this, "Imported: $fileName", Toast.LENGTH_SHORT).show()
             loadImages()

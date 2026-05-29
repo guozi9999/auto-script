@@ -41,6 +41,13 @@ class ScreenCapture(private val context: Context) {
     private var screenDensity = 0
     
     private val handler = Handler(Looper.getMainLooper())
+    private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            Log.d(TAG, "MediaProjection 已停止")
+            release()
+            mediaProjection = null
+        }
+    }
     
     init {
         // 获取屏幕尺寸
@@ -75,6 +82,8 @@ class ScreenCapture(private val context: Context) {
             return false
         }
         
+        stopProjection()
+        
         val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, data)
         
@@ -82,6 +91,7 @@ class ScreenCapture(private val context: Context) {
             Log.e(TAG, "无法创建 MediaProjection")
             return false
         }
+        mediaProjection?.registerCallback(projectionCallback, handler)
         
         Log.d(TAG, "截屏权限已获取")
         return true
@@ -104,40 +114,35 @@ class ScreenCapture(private val context: Context) {
             return null
         }
         
-        // 创建 ImageReader
-        imageReader = ImageReader.newInstance(
-            screenWidth, screenHeight,
-            PixelFormat.RGBA_8888, 2
-        )
-        
-        // 创建虚拟显示
-        virtualDisplay = mediaProjection?.createVirtualDisplay(
-            VIRTUAL_DISPLAY_NAME,
-            screenWidth, screenHeight, screenDensity,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            imageReader?.surface,
-            null, handler
-        )
+        if (!ensureVirtualDisplay()) {
+            return null
+        }
         
         // 等待图像可用
         Thread.sleep(100)
         
         // 获取图像
-        val image = imageReader?.acquireLatestImage()
+        var image: Image? = null
+        var attempts = 0
+        while (image == null && attempts < 5) {
+            image = imageReader?.acquireLatestImage()
+            if (image != null) break
+            attempts++
+            Thread.sleep(50)
+        }
         if (image == null) {
             Log.e(TAG, "无法获取屏幕图像")
-            release()
             return null
         }
         
-        // 转换为 Bitmap
-        val bitmap = imageToBitmap(image)
-        image.close()
-        
-        // 释放资源
-        release()
-        
-        return bitmap
+        return try {
+            imageToBitmap(image)
+        } catch (e: Exception) {
+            Log.e(TAG, "转换截图失败: ${e.message}")
+            null
+        } finally {
+            image.close()
+        }
     }
     
     /**
@@ -149,14 +154,53 @@ class ScreenCapture(private val context: Context) {
         return try {
             val file = File(filePath)
             file.parentFile?.mkdirs()
-            FileOutputStream(file).use { out ->
+            val saved = FileOutputStream(file).use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
-            bitmap.recycle()
-            Log.d(TAG, "截图已保存: $filePath")
-            true
+            if (saved) {
+                Log.d(TAG, "截图已保存: $filePath")
+            } else {
+                Log.e(TAG, "保存截图失败: 图片编码失败")
+            }
+            saved
         } catch (e: Exception) {
             Log.e(TAG, "保存截图失败: ${e.message}")
+            false
+        } finally {
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+    }
+    
+    /**
+     * Android 14 起，一个 MediaProjection 会话只能创建一次 VirtualDisplay。
+     * 因此截屏会话内复用 ImageReader/VirtualDisplay，直到权限失效或主动销毁。
+     */
+    private fun ensureVirtualDisplay(): Boolean {
+        if (virtualDisplay != null && imageReader != null) {
+            return true
+        }
+        
+        val projection = mediaProjection ?: return false
+        imageReader = ImageReader.newInstance(
+            screenWidth, screenHeight,
+            PixelFormat.RGBA_8888, 2
+        )
+        
+        return try {
+            virtualDisplay = projection.createVirtualDisplay(
+                VIRTUAL_DISPLAY_NAME,
+                screenWidth, screenHeight, screenDensity,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                imageReader?.surface,
+                null, handler
+            )
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "创建虚拟显示失败: ${e.message}")
+            release()
+            mediaProjection = null
             false
         }
     }
@@ -179,7 +223,13 @@ class ScreenCapture(private val context: Context) {
         bitmap.copyPixelsFromBuffer(buffer)
         
         // 裁剪到实际屏幕尺寸
-        return Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
+        return if (rowPadding == 0) {
+            bitmap
+        } else {
+            val cropped = Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
+            bitmap.recycle()
+            cropped
+        }
     }
     
     /**
@@ -192,12 +242,27 @@ class ScreenCapture(private val context: Context) {
         imageReader = null
     }
     
+    private fun stopProjection() {
+        release()
+        mediaProjection?.let { projection ->
+            try {
+                projection.unregisterCallback(projectionCallback)
+            } catch (e: Exception) {
+                Log.w(TAG, "注销截屏回调失败: ${e.message}")
+            }
+            try {
+                projection.stop()
+            } catch (e: Exception) {
+                Log.w(TAG, "停止截屏会话失败: ${e.message}")
+            }
+        }
+        mediaProjection = null
+    }
+    
     /**
      * 销毁服务
      */
     fun destroy() {
-        release()
-        mediaProjection?.stop()
-        mediaProjection = null
+        stopProjection()
     }
 }
