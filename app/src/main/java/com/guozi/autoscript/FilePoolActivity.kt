@@ -50,18 +50,18 @@ class FilePoolActivity : AppCompatActivity() {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = ClipData.newPlainText("image_path", file.absolutePath)
                 clipboard.setPrimaryClip(clip)
-                Toast.makeText(this, "Path copied: ${file.absolutePath}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "路径已复制：${file.absolutePath}", Toast.LENGTH_SHORT).show()
             },
             onDelete = { file ->
                 AlertDialog.Builder(this)
-                    .setTitle("Delete Image")
-                    .setMessage("Are you sure you want to delete ${file.name}?")
-                    .setPositiveButton("Delete") { _, _ ->
+                    .setTitle("删除图片")
+                    .setMessage("确定要删除 ${file.name} 吗？")
+                    .setPositiveButton("删除") { _, _ ->
                         file.delete()
                         loadImages()
-                        Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show()
                     }
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton("取消", null)
                     .show()
             }
         )
@@ -104,7 +104,7 @@ class FilePoolActivity : AppCompatActivity() {
             val destFile = File(imagesDir, fileName)
             val inputStream = contentResolver.openInputStream(uri)
             if (inputStream == null) {
-                Toast.makeText(this, "Import failed: unable to open image", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "导入失败：无法打开图片", Toast.LENGTH_SHORT).show()
                 return
             }
             inputStream.use { input ->
@@ -113,10 +113,10 @@ class FilePoolActivity : AppCompatActivity() {
                 }
             }
             
-            Toast.makeText(this, "Imported: $fileName", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "已导入：$fileName", Toast.LENGTH_SHORT).show()
             loadImages()
         } catch (e: Exception) {
-            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "导入失败：${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     

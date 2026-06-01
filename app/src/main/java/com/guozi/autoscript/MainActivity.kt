@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
             sleep(300);
             
             // 输入文字
-            input("Hello World!");
+            input("你好，自动脚本！");
             log("输入完成");
         """.trimIndent(),
         
@@ -160,7 +160,13 @@ class MainActivity : AppCompatActivity() {
         
         // 清空日志
         binding.btnClearLog.setOnClickListener {
-            binding.tvLog.text = ""
+            LogStore.clear()
+            renderLogPreview()
+        }
+
+        // 查看完整日志
+        binding.btnViewLog.setOnClickListener {
+            startActivity(Intent(this, LogActivity::class.java))
         }
         
         // 示例脚本
@@ -253,7 +259,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAccessibilityDialog() {
         AlertDialog.Builder(this)
             .setTitle("需要开启无障碍服务")
-            .setMessage("请在设置中找到 AutoScript 并开启无障碍服务")
+            .setMessage("请在设置中找到自动脚本并开启无障碍服务")
             .setPositiveButton("去设置") { _, _ ->
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
@@ -329,10 +335,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
-        val fileName = binding.etFileName.text.toString().ifBlank { "script.js" }
+        val fileName = scriptFileNameFrom(binding.etFileName.text.toString(), "脚本")
         val file = File(getExternalFilesDir("scripts"), fileName)
         file.writeText(script)
         Toast.makeText(this, "已保存: ${file.absolutePath}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun scriptFileNameFrom(input: String, defaultName: String): String {
+        val trimmed = input.trim().ifBlank { defaultName }
+        return if (trimmed.endsWith(".js", ignoreCase = true)) trimmed else "$trimmed.js"
     }
     
     private fun loadScript() {
@@ -387,11 +398,29 @@ class MainActivity : AppCompatActivity() {
     private fun appendLog(message: String) {
         val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
-        binding.tvLog.append("[$timestamp] $message\n")
+        LogStore.add("[$timestamp] $message")
+        renderLogPreview(scrollToBottom = true)
+    }
+
+    private fun renderLogPreview(scrollToBottom: Boolean = false) {
+        val previewLogs = LogStore.latest(PREVIEW_LOG_LIMIT)
+        binding.tvLog.text = if (previewLogs.isEmpty()) {
+            ""
+        } else {
+            previewLogs.joinToString(separator = "\n", postfix = "\n")
+        }
         
-        // 自动滚动到底部
-        binding.scrollLog.post {
-            binding.scrollLog.fullScroll(android.widget.ScrollView.FOCUS_DOWN)
+        if (scrollToBottom) {
+            binding.scrollLog.post {
+                binding.scrollLog.fullScroll(android.widget.ScrollView.FOCUS_DOWN)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::binding.isInitialized) {
+            renderLogPreview()
         }
     }
     
@@ -417,5 +446,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scriptRunner.destroy()
+    }
+
+    companion object {
+        private const val PREVIEW_LOG_LIMIT = 1000
     }
 }

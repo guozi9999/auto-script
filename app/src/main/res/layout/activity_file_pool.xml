@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="File Pool"
+            android:text="@string/file_pool"
             android:textSize="22sp"
             android:textStyle="bold" />
 
@@ -26,7 +26,7 @@
             android:id="@+id/btnSelectImage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select Image" />
+            android:text="@string/file_pool_select_image" />
     </LinearLayout>
 
     <TextView

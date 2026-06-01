@@ -20,25 +20,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="AutoScript"
+            android:text="@string/app_name"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF" />
-
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="保存"
-            android:textSize="12sp"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnLoad"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="加载"
-            android:textSize="12sp" />
     </LinearLayout>
 
     <!-- 文件名输入 -->
@@ -46,14 +31,51 @@
         android:id="@+id/etFileName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="文件名 (script.js)"
+        android:minHeight="48dp"
+        android:hint="文件名（默认：脚本）"
         android:inputType="text"
         android:singleLine="true"
         android:autofillHints="filename"
         android:importantForAutofill="no"
+        android:background="#FFFFFF"
+        android:gravity="center_vertical"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="4dp"
+        android:paddingVertical="10dp"
+        android:textColor="#222222"
+        android:textColorHint="#7A7A7A"
         android:textSize="14sp" />
+
+    <!-- 文件操作 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#FFFFFF"
+        android:paddingHorizontal="8dp"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:text="保存脚本"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:backgroundTint="#43A047" />
+
+        <Button
+            android:id="@+id/btnLoad"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="加载脚本"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:backgroundTint="#2E7D32" />
+    </LinearLayout>
 
     <!-- 代码编辑区 - 主要区域 -->
     <EditText
@@ -63,12 +85,13 @@
         android:layout_weight="1"
         android:minHeight="150dp"
         android:inputType="textMultiLine"
-        android:hint="在此输入 JavaScript 脚本..."
+        android:hint="在此输入脚本代码..."
         android:gravity="top"
         android:fontFamily="monospace"
         android:textSize="14sp"
         android:background="#1E1E1E"
         android:textColor="#FFFFFF"
+        android:textColorHint="#A7ADB7"
         android:padding="8dp"
         android:scrollbars="vertical"
         android:importantForAutofill="no" />
@@ -128,37 +151,53 @@
             <Button
                 android:id="@+id/btnFloating"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="悬浮窗"
-                android:textSize="11sp"
+                android:textSize="10sp"
+                android:singleLine="true"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingHorizontal="2dp"
                 android:layout_marginEnd="4dp" />
 
             <Button
                 android:id="@+id/btnScreenCapture"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="截屏"
-                android:textSize="11sp"
+                android:textSize="10sp"
+                android:singleLine="true"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingHorizontal="2dp"
                 android:layout_marginEnd="4dp" />
 
             <Button
                 android:id="@+id/btnCoordPicker"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="坐标"
-                android:textSize="11sp"
+                android:textSize="10sp"
+                android:singleLine="true"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingHorizontal="2dp"
                 android:layout_marginEnd="4dp" />
 
             <Button
                 android:id="@+id/btnFilePool"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="文件池"
-                android:textSize="11sp" />
+                android:textSize="10sp"
+                android:singleLine="true"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingHorizontal="2dp" />
         </LinearLayout>
 
         <!-- 积木编程按钮 -->
@@ -166,7 +205,7 @@
             android:id="@+id/btnBlockEditor"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:text="🧩 积木编程 (可视化)"
+            android:text="🧩 积木编程（可视化）"
             android:textSize="13sp"
             android:backgroundTint="#9C27B0"
             android:layout_marginBottom="4dp" />
@@ -182,9 +221,17 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="日志"
+                android:text="日志（最近1000条）"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnViewLog"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
+                android:text="全部"
+                android:textSize="11sp" />
 
             <Button
                 android:id="@+id/btnClearLog"

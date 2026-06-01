@@ -46,6 +46,15 @@ class BlockAdapter(
         // 设置序号
         binding.tvIndex.text = "${position + 1}"
 
+        // 条件分支内部缩进，帮助用户看清“成立时/否则时”的层级
+        val depth = calculateIndent(position)
+        (binding.root.layoutParams as? ViewGroup.MarginLayoutParams)?.let { params ->
+            val density = holder.itemView.resources.displayMetrics.density
+            params.marginStart = ((12 + depth * 28) * density).toInt()
+            params.marginEnd = (12 * density).toInt()
+            binding.root.layoutParams = params
+        }
+
         // 设置背景颜色
         val bgDrawable = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -101,5 +110,25 @@ class BlockAdapter(
         val minPos = minOf(fromPosition, toPosition)
         val maxPos = maxOf(fromPosition, toPosition)
         notifyItemRangeChanged(minPos, maxPos - minPos + 1)
+    }
+
+    private fun calculateIndent(position: Int): Int {
+        var depth = 0
+
+        for (i in 0 until position) {
+            val type = blocks[i].type
+            if (type.closesCodeBlockBeforeLine()) {
+                depth = maxOf(0, depth - 1)
+            }
+            if (type.opensCodeBlock()) {
+                depth++
+            }
+        }
+
+        if (blocks[position].type.closesCodeBlockBeforeLine()) {
+            depth = maxOf(0, depth - 1)
+        }
+
+        return depth
     }
 }

@@ -65,7 +65,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="🧩\n\n点击下方按钮添加积木块\n开始搭建你的脚本"
+        android:text="🧩\n\n添加动作或条件分支\n开始搭建你的脚本"
         android:textSize="16sp"
         android:textColor="#AAAAAA"
         android:lineSpacingExtra="6dp"

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -28,6 +29,7 @@ class FloatingWindowService : Service() {
     
     @Suppress("StaticFieldLeak")
     companion object {
+        private const val TAG = "FloatingWindowService"
         private const val CHANNEL_ID = "auto_script_channel"
         private const val NOTIFICATION_ID = 1
         var instance: FloatingWindowService? = null
@@ -39,6 +41,7 @@ class FloatingWindowService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var floatingView: View
     private lateinit var layoutParams: WindowManager.LayoutParams
+    private var coordinateOverlayWindowManager: WindowManager? = null
     
     // 状态回调
     var onRunClick: (() -> Unit)? = null
@@ -83,10 +86,10 @@ class FloatingWindowService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "AutoScript 服务",
+                "自动脚本服务",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "AutoScript 脚本执行服务"
+                description = "自动脚本执行服务"
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -96,14 +99,14 @@ class FloatingWindowService : Service() {
     private fun createNotification(): Notification {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("AutoScript")
+                .setContentTitle("自动脚本")
                 .setContentText("脚本服务运行中")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .build()
         } else {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
-                .setContentTitle("AutoScript")
+                .setContentTitle("自动脚本")
                 .setContentText("脚本服务运行中")
                 .setSmallIcon(android.R.drawable.ic_media_play)
                 .build()
@@ -111,7 +114,8 @@ class FloatingWindowService : Service() {
     }
     
     private fun createFloatingWindow() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val preferredType = preferredWindowType()
+        windowManager = windowManagerFor(preferredType)
         
         // 创建悬浮窗布局
         floatingView = createFloatingView()
@@ -120,12 +124,8 @@ class FloatingWindowService : Service() {
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            preferredType,
+            floatingWindowFlags(),
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -134,10 +134,69 @@ class FloatingWindowService : Service() {
         }
         
         // 添加悬浮窗
-        windowManager.addView(floatingView, layoutParams)
+        addFloatingViewWithFallback()
         
         // 设置拖拽
         setupDrag()
+    }
+
+    private fun addFloatingViewWithFallback() {
+        try {
+            windowManager.addView(floatingView, layoutParams)
+            Log.d(TAG, "悬浮窗已使用窗口类型: ${layoutParams.type}")
+        } catch (e: Exception) {
+            val normalType = normalWindowType()
+            if (layoutParams.type == normalType) {
+                throw e
+            }
+
+            Log.w(TAG, "高层级悬浮窗不可用，回退到普通悬浮窗", e)
+            windowManager = appWindowManager()
+            layoutParams.type = normalType
+            windowManager.addView(floatingView, layoutParams)
+        }
+    }
+
+    private fun appWindowManager(): WindowManager {
+        return getSystemService(WINDOW_SERVICE) as WindowManager
+    }
+
+    private fun windowManagerFor(type: Int): WindowManager {
+        return if (type == WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY) {
+            AutoAccessibilityService.instance?.getSystemService(WINDOW_SERVICE) as? WindowManager
+                ?: appWindowManager()
+        } else {
+            appWindowManager()
+        }
+    }
+
+    private fun preferredWindowType(): Int {
+        return if (AutoAccessibilityService.instance != null) {
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        } else {
+            normalWindowType()
+        }
+    }
+
+    private fun normalWindowType(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+    }
+
+    private fun floatingWindowFlags(passThroughTouches: Boolean = false): Int {
+        var flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+
+        if (passThroughTouches) {
+            flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        }
+
+        return flags
     }
     
     private fun createFloatingView(): View {
@@ -253,8 +312,7 @@ class FloatingWindowService : Service() {
         floatingView.findViewWithTag<TextView>("status")?.text = "点击屏幕获取坐标"
         
         // 更新悬浮窗为不拦截触摸事件
-        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        layoutParams.flags = floatingWindowFlags(passThroughTouches = true)
         windowManager.updateViewLayout(floatingView, layoutParams)
         
         // 创建全屏透明覆盖层用于接收触摸事件
@@ -265,13 +323,10 @@ class FloatingWindowService : Service() {
         val overlayParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE,
+            layoutParams.type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
         
@@ -298,9 +353,24 @@ class FloatingWindowService : Service() {
         
         try {
             windowManager.addView(overlay, overlayParams)
+            coordinateOverlayWindowManager = windowManager
             coordinateOverlay = overlay
         } catch (e: Exception) {
-            e.printStackTrace()
+            val normalType = normalWindowType()
+            if (overlayParams.type != normalType) {
+                try {
+                    overlayParams.type = normalType
+                    val fallbackWindowManager = appWindowManager()
+                    fallbackWindowManager.addView(overlay, overlayParams)
+                    coordinateOverlayWindowManager = fallbackWindowManager
+                    coordinateOverlay = overlay
+                    return
+                } catch (fallbackError: Exception) {
+                    fallbackError.printStackTrace()
+                }
+            } else {
+                e.printStackTrace()
+            }
             exitCoordinatePickerMode()
         }
     }
@@ -311,17 +381,18 @@ class FloatingWindowService : Service() {
         floatingView.findViewWithTag<TextView>("status")?.text = "就绪"
         
         // 恢复悬浮窗触摸拦截
-        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        layoutParams.flags = floatingWindowFlags()
         windowManager.updateViewLayout(floatingView, layoutParams)
         
         // 移除覆盖层
         coordinateOverlay?.let {
             try {
-                windowManager.removeView(it)
+                (coordinateOverlayWindowManager ?: windowManager).removeView(it)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+        coordinateOverlayWindowManager = null
         coordinateOverlay = null
     }
 }

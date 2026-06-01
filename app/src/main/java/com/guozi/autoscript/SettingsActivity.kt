@@ -39,7 +39,7 @@ class SettingsActivity : AppCompatActivity() {
         val tvFontSize = findViewById<TextView>(R.id.tvFontSize)
         seekBarFontSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                tvFontSize.text = "${progress}sp"
+                tvFontSize.text = "${progress}号"
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
@@ -146,7 +146,7 @@ class SettingsActivity : AppCompatActivity() {
         val seekBarFontSize = findViewById<SeekBar>(R.id.seekBarFontSize)
         val tvFontSize = findViewById<TextView>(R.id.tvFontSize)
         seekBarFontSize.progress = settingsManager.fontSize
-        tvFontSize.text = "${settingsManager.fontSize}sp"
+        tvFontSize.text = "${settingsManager.fontSize}号"
         
         // 自动保存
         val cbAutoSave = findViewById<CheckBox>(R.id.cbAutoSave)

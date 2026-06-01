@@ -75,7 +75,7 @@
                 android:id="@+id/tvFontSize"
                 android:layout_width="40dp"
                 android:layout_height="wrap_content"
-                android:text="14sp"
+                android:text="14号"
                 android:gravity="center" />
         </LinearLayout>
 
@@ -189,7 +189,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="截图延迟 (ms)" />
+                android:text="截图延迟（毫秒）" />
 
             <EditText
                 android:id="@+id/etScreenshotDelay"
@@ -212,7 +212,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="点击延迟 (ms)" />
+                android:text="点击延迟（毫秒）" />
 
             <EditText
                 android:id="@+id/etClickDelay"
@@ -235,7 +235,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="滑动时长 (ms)" />
+                android:text="滑动时长（毫秒）" />
 
             <EditText
                 android:id="@+id/etSwipeDuration"

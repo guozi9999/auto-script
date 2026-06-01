@@ -52,7 +52,13 @@
         <activity
             android:name=".FilePoolActivity"
             android:exported="false"
-            android:label="File Pool" />
+            android:label="@string/file_pool" />
+
+        <!-- 日志页面 -->
+        <activity
+            android:name=".LogActivity"
+            android:exported="false"
+            android:label="全部日志" />
 
         <!-- 积木块编辑器 -->
         <activity

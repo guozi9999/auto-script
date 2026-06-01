@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AutoScript</string>
-    <string name="accessibility_service_description">AutoScript 需要无障碍服务来执行自动化操作，包括点击、滑动、输入文字等。</string>
+    <string name="app_name">自动脚本</string>
+    <string name="accessibility_service_description">自动脚本需要无障碍服务来执行自动化操作，包括点击、滑动、输入文字等。</string>
     
     <!-- 设置界面 -->
     <string name="settings">设置</string>
@@ -23,7 +23,9 @@
     </string-array>
     
     <!-- 文件池 -->
-    <string name="file_pool_path_hint">Image path: /sdcard/Android/data/com.guozi.autoscript/files/images/</string>
-    <string name="file_pool_empty">No images yet, click Select Image to import</string>
-    <string name="file_pool_tip">Tip: Click to copy path, long press to delete</string>
+    <string name="file_pool">文件池</string>
+    <string name="file_pool_select_image">选择图片</string>
+    <string name="file_pool_path_hint">图片路径：/sdcard/Android/data/com.guozi.autoscript/files/images/</string>
+    <string name="file_pool_empty">还没有图片，点击“选择图片”导入</string>
+    <string name="file_pool_tip">提示：点击复制路径，长按删除</string>
 </resources>

@@ -1,14 +1,17 @@
 package com.guozi.autoscript
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -30,6 +33,15 @@ class BlockEditorActivity : AppCompatActivity() {
     private lateinit var adapter: BlockAdapter
     private val blocks = mutableListOf<BlockModel>()
     private var itemTouchHelper: ItemTouchHelper? = null
+    private val conditionTypes = listOf(
+        BlockType.IF_TEXT_EXISTS,
+        BlockType.IF_TEXT_NOT_EXISTS,
+        BlockType.IF_IMAGE_FOUND,
+        BlockType.IF_IMAGE_NOT_FOUND,
+        BlockType.IF_COLOR_MATCH,
+        BlockType.IF_FILE_EXISTS,
+        BlockType.IF_CUSTOM_CONDITION
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -123,20 +135,68 @@ class BlockEditorActivity : AppCompatActivity() {
      * 显示积木块类型选择对话框
      */
     private fun showBlockTypeDialog() {
-        val types = BlockType.entries.toTypedArray()
-        val items = types.map { "${it.icon}  ${it.displayName}" }.toTypedArray()
+        val actionTypes = BlockType.entries
+            .filterNot { it.isConditionStart() || it.isBranchMarker() }
+            .toTypedArray()
+        val items = mutableListOf("🔀  条件分支")
+        items.addAll(actionTypes.map { "${it.icon}  ${it.displayName}" })
 
         AlertDialog.Builder(this)
             .setTitle("选择积木块")
-            .setItems(items) { _, which ->
-                val block = BlockModel(type = types[which])
-                blocks.add(block)
-                adapter.notifyItemInserted(blocks.size - 1)
-                binding.rvBlocks.smoothScrollToPosition(blocks.size - 1)
-                updateEmptyState()
-                updateBlockCount()
+            .setItems(items.toTypedArray()) { _, which ->
+                if (which == 0) {
+                    showConditionTypeDialog()
+                } else {
+                    showCreateBlockDialog(actionTypes[which - 1])
+                }
             }
             .show()
+    }
+
+    /**
+     * 显示条件类型选择对话框
+     */
+    private fun showConditionTypeDialog() {
+        val items = conditionTypes
+            .map { "${it.icon}  ${it.displayName}" }
+            .toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("选择条件")
+            .setMessage("选择一个容易理解的条件，系统会自动添加“否则”和“结束条件分支”。")
+            .setItems(items) { _, which ->
+                showCreateBlockDialog(conditionTypes[which], insertBranchScaffold = true)
+            }
+            .show()
+    }
+
+    /**
+     * 创建新积木块，条件分支会自动带出否则和结束标记
+     */
+    private fun showCreateBlockDialog(
+        type: BlockType,
+        insertBranchScaffold: Boolean = false
+    ) {
+        if (type.paramKeys.isEmpty()) {
+            addBlock(type)
+            return
+        }
+
+        val title = if (insertBranchScaffold) {
+            "${type.icon} 创建条件分支"
+        } else {
+            "${type.icon} 添加 ${type.displayName}"
+        }
+        val positiveText = if (insertBranchScaffold) "创建分支" else "添加"
+
+        showParamDialog(
+            title = title,
+            type = type,
+            params = type.paramDefaults,
+            positiveText = positiveText
+        ) { params ->
+            addBlock(type, params, insertBranchScaffold)
+        }
     }
 
     /**
@@ -149,12 +209,38 @@ class BlockEditorActivity : AppCompatActivity() {
         val type = block.type
 
         if (type.paramKeys.isEmpty()) {
-            Toast.makeText(this, "此积木块没有可配置参数", Toast.LENGTH_SHORT).show()
+            if (type.isBranchMarker()) {
+                Toast.makeText(this, "这是条件分支的结构标记，不需要填写内容", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "此积木块没有可配置参数", Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
+        showParamDialog(
+            title = "${type.icon} 编辑 ${type.displayName}",
+            type = type,
+            params = block.params,
+            positiveText = "确定"
+        ) { params ->
+            block.params.clear()
+            block.params.addAll(params)
+            adapter.notifyItemChanged(position)
+        }
+    }
+
+    /**
+     * 显示参数填写对话框
+     */
+    private fun showParamDialog(
+        title: String,
+        type: BlockType,
+        params: List<String>,
+        positiveText: String,
+        onConfirm: (List<String>) -> Unit
+    ) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("${type.icon} 编辑 ${type.displayName}")
+        builder.setTitle(title)
 
         // 创建输入框
         val layout = LinearLayout(this).apply {
@@ -162,7 +248,7 @@ class BlockEditorActivity : AppCompatActivity() {
             setPadding(48, 24, 48, 8)
         }
 
-        val editTexts = mutableListOf<EditText>()
+        val paramReaders = mutableListOf<() -> String>()
 
         type.paramKeys.forEachIndexed { index, key ->
             val label = TextView(this).apply {
@@ -173,20 +259,47 @@ class BlockEditorActivity : AppCompatActivity() {
             }
             layout.addView(label)
 
-            val editText = EditText(this).apply {
-                setText(block.params.getOrElse(index) { type.paramDefaults.getOrElse(index) { "" } })
-                textSize = 16f
-                setPadding(16, 12, 16, 12)
-                val bg = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    cornerRadius = 8f
-                    setStroke(2, Color.parseColor("#CCCCCC"))
+            if (isFilePoolParam(key)) {
+                val selectedValue = params.getOrElse(index) { type.paramDefaults.getOrElse(index) { "" } }
+                val valueView = TextView(this).apply {
+                    text = selectedValue.ifBlank { "点击从文件池选择" }
+                    textSize = 16f
+                    setTextColor(Color.parseColor("#333333"))
+                    setPadding(16, 18, 16, 18)
+                    val bg = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 8f
+                        setStroke(2, Color.parseColor("#CCCCCC"))
+                        setColor(Color.WHITE)
+                    }
+                    background = bg
+                    setOnClickListener {
+                        showFilePoolPicker(key) { path ->
+                            text = path
+                        }
+                    }
                 }
-                background = bg
-                inputType = getInputTypeForParam(key)
+                layout.addView(valueView)
+                paramReaders.add {
+                    val text = valueView.text.toString()
+                    if (text == "点击从文件池选择") "" else text
+                }
+            } else {
+                val editText = EditText(this).apply {
+                    setText(params.getOrElse(index) { type.paramDefaults.getOrElse(index) { "" } })
+                    textSize = 16f
+                    setPadding(16, 12, 16, 12)
+                    val bg = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 8f
+                        setStroke(2, Color.parseColor("#CCCCCC"))
+                    }
+                    background = bg
+                    inputType = getInputTypeForParam(key)
+                }
+                layout.addView(editText)
+                paramReaders.add { editText.text.toString() }
             }
-            layout.addView(editText)
-            editTexts.add(editText)
         }
 
         val scrollView = ScrollView(this).apply {
@@ -194,19 +307,32 @@ class BlockEditorActivity : AppCompatActivity() {
         }
         builder.setView(scrollView)
 
-        builder.setPositiveButton("确定") { _, _ ->
-            editTexts.forEachIndexed { index, editText ->
-                if (index < block.params.size) {
-                    block.params[index] = editText.text.toString()
-                } else {
-                    block.params.add(editText.text.toString())
-                }
-            }
-            adapter.notifyItemChanged(position)
+        builder.setPositiveButton(positiveText) { _, _ ->
+            onConfirm(paramReaders.map { it() })
         }
 
         builder.setNegativeButton("取消", null)
         builder.show()
+    }
+
+    private fun addBlock(
+        type: BlockType,
+        params: List<String> = type.paramDefaults,
+        insertBranchScaffold: Boolean = false
+    ) {
+        val insertPosition = blocks.size
+        blocks.add(BlockModel(type = type, params = params.toMutableList()))
+
+        if (insertBranchScaffold) {
+            blocks.add(BlockModel(type = BlockType.ELSE))
+            blocks.add(BlockModel(type = BlockType.END_IF))
+        }
+
+        val insertedCount = if (insertBranchScaffold) 3 else 1
+        adapter.notifyItemRangeInserted(insertPosition, insertedCount)
+        binding.rvBlocks.smoothScrollToPosition(blocks.size - 1)
+        updateEmptyState()
+        updateBlockCount()
     }
 
     /**
@@ -259,13 +385,17 @@ class BlockEditorActivity : AppCompatActivity() {
             Toast.makeText(this, "没有积木块，无法生成代码", Toast.LENGTH_SHORT).show()
             return
         }
+        validateRequiredParams()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            return
+        }
         validateBranchBlocks()?.let { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
         }
 
         AlertDialog.Builder(this)
-            .setTitle("生成的 JavaScript 代码")
+            .setTitle("生成的脚本代码")
             .setMessage(code)
             .setPositiveButton("确定", null)
             .setNeutralButton("复制") { _, _ ->
@@ -286,6 +416,10 @@ class BlockEditorActivity : AppCompatActivity() {
             Toast.makeText(this, "没有积木块，无法保存", Toast.LENGTH_SHORT).show()
             return
         }
+        validateRequiredParams()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            return
+        }
         validateBranchBlocks()?.let { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
@@ -294,7 +428,7 @@ class BlockEditorActivity : AppCompatActivity() {
         // 输入文件名
         val editText = EditText(this).apply {
             hint = "请输入文件名"
-            setText("block_script.js")
+            setText("积木脚本")
             setPadding(48, 24, 48, 24)
         }
 
@@ -302,7 +436,7 @@ class BlockEditorActivity : AppCompatActivity() {
             .setTitle("保存脚本")
             .setView(editText)
             .setPositiveButton("保存") { _, _ ->
-                val fileName = editText.text.toString().ifBlank { "block_script.js" }
+                val fileName = scriptFileNameFrom(editText.text.toString(), "积木脚本")
                 val file = File(getExternalFilesDir("scripts"), fileName)
                 file.parentFile?.mkdirs()
                 file.writeText(code)
@@ -310,6 +444,11 @@ class BlockEditorActivity : AppCompatActivity() {
             }
             .setNegativeButton("取消", null)
             .show()
+    }
+
+    private fun scriptFileNameFrom(input: String, defaultName: String): String {
+        val trimmed = input.trim().ifBlank { defaultName }
+        return if (trimmed.endsWith(".js", ignoreCase = true)) trimmed else "$trimmed.js"
     }
 
     /**
@@ -321,6 +460,10 @@ class BlockEditorActivity : AppCompatActivity() {
             Toast.makeText(this, "没有积木块，无法运行", Toast.LENGTH_SHORT).show()
             return
         }
+        validateRequiredParams()?.let { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+            return
+        }
         validateBranchBlocks()?.let { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             return
@@ -330,7 +473,7 @@ class BlockEditorActivity : AppCompatActivity() {
         if (AutoAccessibilityService.instance == null) {
             AlertDialog.Builder(this)
                 .setTitle("需要开启无障碍服务")
-                .setMessage("请在设置中找到 AutoScript 并开启无障碍服务")
+                .setMessage("请在设置中找到自动脚本并开启无障碍服务")
                 .setPositiveButton("去设置") { _, _ ->
                     startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 }
@@ -375,40 +518,241 @@ class BlockEditorActivity : AppCompatActivity() {
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         }
     }
+
+    private fun isFilePoolParam(key: String): Boolean {
+        return key.contains("图片路径") || key.contains("文件路径")
+    }
+
+    private fun showFilePoolPicker(key: String, onSelected: (String) -> Unit) {
+        val imageOnly = key.contains("图片路径")
+        val files = getFilePoolFiles(imageOnly = imageOnly)
+
+        if (files.isEmpty()) {
+            val message = if (imageOnly) {
+                "文件池里还没有图片，请先导入图片。"
+            } else {
+                "文件池里还没有可选文件。"
+            }
+            AlertDialog.Builder(this)
+                .setTitle("文件池为空")
+                .setMessage(message)
+                .setPositiveButton("去文件池") { _, _ ->
+                    startActivity(Intent(this, FilePoolActivity::class.java))
+                }
+                .setNegativeButton("取消", null)
+                .show()
+            return
+        }
+
+        if (imageOnly) {
+            showImageFilePicker(files, onSelected)
+            return
+        }
+
+        val baseDir = getExternalFilesDir(null)
+        val names = files.map { file ->
+            baseDir?.let { file.relativeToOrSelf(it).path } ?: file.name
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("从文件池选择文件")
+            .setItems(names) { _, which ->
+                onSelected(files[which].absolutePath)
+            }
+            .show()
+    }
+
+    private fun showImageFilePicker(files: List<File>, onSelected: (String) -> Unit) {
+        val baseDir = getExternalFilesDir(null)
+        val list = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(8), 0, dp(8))
+        }
+        lateinit var dialog: AlertDialog
+
+        files.forEach { file ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), dp(10), dp(16), dp(10))
+                background = selectableItemBackground()
+                setOnClickListener {
+                    onSelected(file.absolutePath)
+                    dialog.dismiss()
+                }
+            }
+
+            val thumbnail = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(72), dp(72))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setBackgroundColor(Color.parseColor("#EEEEEE"))
+                setImageBitmap(decodeScaledBitmap(file, 180, 180))
+                setOnClickListener {
+                    showImagePreviewDialog(file)
+                }
+            }
+            row.addView(thumbnail)
+
+            val labelGroup = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), 0, 0, 0)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            labelGroup.addView(TextView(this).apply {
+                text = file.name
+                textSize = 15f
+                setTextColor(Color.parseColor("#222222"))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+
+            labelGroup.addView(TextView(this).apply {
+                text = baseDir?.let { file.relativeToOrSelf(it).path } ?: file.absolutePath
+                textSize = 12f
+                setTextColor(Color.parseColor("#777777"))
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+
+            labelGroup.addView(TextView(this).apply {
+                text = "点击缩略图可放大"
+                textSize = 11f
+                setTextColor(Color.parseColor("#999999"))
+            })
+
+            row.addView(labelGroup)
+            list.addView(row)
+
+            list.addView(View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(1)
+                )
+                setBackgroundColor(Color.parseColor("#EEEEEE"))
+            })
+        }
+
+        val scrollView = ScrollView(this).apply {
+            addView(list)
+        }
+
+        dialog = AlertDialog.Builder(this)
+            .setTitle("从文件池选择图片")
+            .setView(scrollView)
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.show()
+    }
+
+    private fun showImagePreviewDialog(file: File) {
+        val imageView = ImageView(this).apply {
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setBackgroundColor(Color.BLACK)
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setImageBitmap(decodeScaledBitmap(file, 1600, 1600))
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(file.name)
+            .setView(imageView)
+            .setPositiveButton("关闭", null)
+            .show()
+    }
+
+    private fun getFilePoolFiles(imageOnly: Boolean): List<File> {
+        val baseDir = getExternalFilesDir(null) ?: return emptyList()
+        val imageExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp")
+
+        return if (imageOnly) {
+            File(baseDir, "images")
+                .listFiles()
+                ?.filter { it.isFile && it.extension.lowercase() in imageExtensions }
+                ?.sortedByDescending { it.lastModified() }
+                ?: emptyList()
+        } else {
+            baseDir.walkTopDown()
+                .filter { it.isFile }
+                .sortedByDescending { it.lastModified() }
+                .toList()
+        }
+    }
+
+    private fun decodeScaledBitmap(file: File, reqWidth: Int, reqHeight: Int): android.graphics.Bitmap? {
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+
+        var sampleSize = 1
+        while (
+            options.outHeight / sampleSize > reqHeight ||
+            options.outWidth / sampleSize > reqWidth
+        ) {
+            sampleSize *= 2
+        }
+
+        return BitmapFactory.decodeFile(
+            file.absolutePath,
+            BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        )
+    }
+
+    private fun selectableItemBackground(): android.graphics.drawable.Drawable? {
+        val attrs = intArrayOf(android.R.attr.selectableItemBackground)
+        val typedArray = obtainStyledAttributes(attrs)
+        return typedArray.getDrawable(0).also {
+            typedArray.recycle()
+        }
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun validateRequiredParams(): String? {
+        blocks.forEachIndexed { blockIndex, block ->
+            block.type.paramKeys.forEachIndexed { paramIndex, key ->
+                if (isFilePoolParam(key) && block.params.getOrNull(paramIndex).isNullOrBlank()) {
+                    val target = if (key.contains("图片路径")) "图片" else "文件"
+                    return "第 ${blockIndex + 1} 块“${block.type.displayName}”还没有选择$target"
+                }
+            }
+        }
+        return null
+    }
     
     private fun validateBranchBlocks(): String? {
         val branchStack = mutableListOf<Boolean>()
         
         blocks.forEachIndexed { index, block ->
-            when (block.type) {
-                BlockType.IF_TEXT_EXISTS,
-                BlockType.IF_COLOR_MATCH,
-                BlockType.IF_IMAGE_FOUND,
-                BlockType.IF_CUSTOM_CONDITION -> branchStack.add(false)
+            when {
+                block.type.isConditionStart() -> {
+                    branchStack.add(false)
+                }
                 
-                BlockType.ELSE -> {
+                block.type == BlockType.ELSE -> {
                     if (branchStack.isEmpty()) {
-                        return "第 ${index + 1} 块“否则”前缺少“如果”积木"
+                        return "第 ${index + 1} 块“否则执行”前缺少条件分支"
                     }
                     if (branchStack.last()) {
-                        return "第 ${index + 1} 块“否则”重复了"
+                        return "第 ${index + 1} 块“否则执行”重复了"
                     }
                     branchStack[branchStack.lastIndex] = true
                 }
                 
-                BlockType.END_IF -> {
+                block.type == BlockType.END_IF -> {
                     if (branchStack.isEmpty()) {
-                        return "第 ${index + 1} 块“结束条件”前缺少“如果”积木"
+                        return "第 ${index + 1} 块“结束条件分支”前缺少条件分支"
                     }
                     branchStack.removeAt(branchStack.lastIndex)
                 }
-                
-                else -> Unit
             }
         }
         
         return if (branchStack.isNotEmpty()) {
-            "有 ${branchStack.size} 个“如果”积木缺少“结束条件”"
+            "有 ${branchStack.size} 个条件分支缺少“结束条件分支”"
         } else {
             null
         }

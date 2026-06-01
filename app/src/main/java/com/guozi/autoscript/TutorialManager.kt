@@ -23,7 +23,7 @@ class TutorialManager(private val context: Context) {
             Tutorial(
                 id = "basics",
                 title = "基础入门",
-                description = "学习 AutoScript 的基本操作",
+                description = "学习自动脚本的基本操作",
                 steps = listOf(
                     TutorialStep(
                         title = "点击操作",
@@ -58,7 +58,7 @@ class TutorialManager(private val context: Context) {
                             sleep(300);
                             
                             // 输入文字
-                            input("Hello AutoScript!");
+                            input("你好，自动脚本！");
                             log("输入完成");
                         """.trimIndent()
                     ),
@@ -182,7 +182,7 @@ class TutorialManager(private val context: Context) {
                         description = "使用 setTextById(id, text) 设置输入框文本",
                         code = """
                             // 设置输入框文本
-                            setTextById("com.example.app:id/et_input", "Hello World");
+                            setTextById("com.example.app:id/et_input", "你好，自动脚本！");
                             log("文本设置完成");
                         """.trimIndent()
                     ),
@@ -309,7 +309,7 @@ class TutorialManager(private val context: Context) {
                         description = "使用 writeFile(path, content) 写入文件",
                         code = """
                             // 写入文件
-                            writeFile("/sdcard/test.txt", "Hello AutoScript!");
+                            writeFile("/sdcard/test.txt", "你好，自动脚本！");
                             log("写入完成");
                         """.trimIndent()
                     ),

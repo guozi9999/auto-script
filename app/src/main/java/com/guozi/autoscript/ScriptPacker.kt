@@ -195,7 +195,7 @@ class ScriptPacker(private val context: Context) {
         val metadata = mapOf(
             "name" to scriptFile.nameWithoutExtension,
             "version" to "1.0.0",
-            "author" to "AutoScript User",
+            "author" to "自动脚本用户",
             "description" to "",
             "createdAt" to System.currentTimeMillis(),
             "fileSize" to scriptFile.length()

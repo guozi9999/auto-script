@@ -1,5 +1,5 @@
 /**
- * AutoScript 完整 API 参考
+ * 自动脚本完整 API 参考
  * 
  * ==================== 基础操作 ====================
  * click(x, y) - 点击坐标
@@ -64,7 +64,7 @@ clickText("确定");
 sleep(500);
 
 // 输入文字
-input("Hello AutoScript!");
+input("你好，自动脚本！");
 sleep(300);
 
 // 返回
